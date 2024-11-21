@@ -1,0 +1,20 @@
+# Ignore Libraries folder in the root of the project
+/Libraries/
+
+# Ignore all Libraries folders at any level (useful for Arduino projects)
+Libraries/
+
+# Ignore Arduino build files and temp files
+/build/
+*.elf
+*.hex
+*.o
+
+# Ignore Arduino IDE-specific files
+*.arduino
+*.bin
+
+# Ignore any logs or temporary files created by the Arduino IDE
+*.log
+
+.DS_Store
