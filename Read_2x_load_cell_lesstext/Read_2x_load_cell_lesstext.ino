@@ -36,9 +36,9 @@ void setup() {
   float calibrationValue_2; // calibration value load cell 2
 
   // calibrationValue_1 = 471.47; // uncomment this if you want to set this value in the sketch ********* OLD CODE ***********
-  calibrationValue_1 = -200.70; // uncomment this if you want to set this value in the sketch
+  calibrationValue_1 = -200.43; // uncomment this if you want to set this value in the sketch
   //calibrationValue_2 = 461.12; // uncomment this if you want to set this value in the sketch ********* OLD CODE ***********
-  calibrationValue_2 = -216.61; // uncomment this if you want to set this value in the sketch
+  calibrationValue_2 = -216.33; // uncomment this if you want to set this value in the sketch
 #if defined(ESP8266) || defined(ESP32)
   //EEPROM.begin(512); // uncomment this if you use ESP8266 and want to fetch the value from eeprom
 #endif
