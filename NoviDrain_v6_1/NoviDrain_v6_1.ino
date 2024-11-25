@@ -24,8 +24,8 @@ Developed by Linh Vu 1/21/19
 
 int saline_rpm = 220; //Saline pump rpm: scaled 0 -255
 int abscess_rpm = 170;   //Saline pump rpm: scaled 0 -255
-int flush_duration = 10; //Saline flush duration: seconds
-float flush_frequency = 1; //Saline flush frequency: minutes
+int flush_duration = 20; //Saline flush duration: seconds
+float flush_frequency = 2; //Saline flush frequency: minutes
 bool bleyn = false; //true: use bluetooth app connection, false ignore bluetooth app
 bool verbosex = true;
 ////////////////////////////////////////////////////////////
@@ -120,6 +120,14 @@ void loop() {
   // Timer-based pump control for periodic flushing
   flush_cycle_proceedyn = handle_flush_cycle();
   if (flush_cycle_proceedyn == 0) {return;}
+
+  //////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////
+  // CHECK FOR CLOG FUNCTION, then turn clog_yn flag to true  //
+  //////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////
 
   // Handle pump logic based on sensor readings and states
   handle_pump_logic();
