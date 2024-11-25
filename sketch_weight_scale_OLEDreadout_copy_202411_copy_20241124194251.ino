@@ -40,22 +40,18 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define BUTTON_PIN 4
 Pushbutton button(BUTTON_PIN);
 
-void displayWeight(int weight){
+void displayWeight(float weight) {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0, 10);
-  // Display static text
   display.println("Weight:");
-  display.display();
   display.setCursor(0, 30);
   display.setTextSize(2);
-  display.print(weight);
-  display.print(" ");
-  display.print("g");
+  display.print(weight, 4); // Show 4 decimal places
+  display.print(" g");
   display.display();  
 }
-
 void setup() {
   Serial.begin(57200);
 
@@ -82,15 +78,14 @@ void loop() {
   }
   
   if (scale.wait_ready_timeout(200)) {
-    reading = round(scale.get_units());
+    float reading = scale.get_units(10); // Average of 10 readings
     Serial.print("Weight: ");
-    Serial.println(reading);
-    if (reading != lastReading){
-      displayWeight(reading); 
+    Serial.println(reading, 4); // Show 4 decimal places in Serial Monitor
+    if (reading != lastReading) {
+      displayWeight(reading);
     }
     lastReading = reading;
-  }
-  else {
+  }else {
     Serial.println("HX711 not found.");
   }
 }
