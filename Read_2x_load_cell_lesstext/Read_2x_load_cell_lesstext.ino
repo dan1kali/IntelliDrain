@@ -1,4 +1,4 @@
-//-------------------------------------------------------------------------------------
+//-----------------------------------------------------------------l--------------------
 // HX711_ADC.h
 // Arduino master library for HX711 24-Bit Analog-to-Digital Converter for Weigh Scales
 // Olav Kallhovd sept2017
@@ -14,10 +14,10 @@
 #endif
 
 //pins:
-const int HX711_dout_1 = 4; //mcu > HX711 no 1 dout pin
-const int HX711_sck_1 = 5; //mcu > HX711 no 1 sck pin
-const int HX711_dout_2 = 8; //mcu > HX711 no 2 dout pin
-const int HX711_sck_2 = 9; //mcu > HX711 no 2 sck pin
+const int HX711_dout_1 = 5; //mcu > HX711 no 1 dout pin
+const int HX711_sck_1 = 4; //mcu > HX711 no 1 sck pin
+const int HX711_dout_2 = 9; //mcu > HX711 no 2 dout pin
+const int HX711_sck_2 = 8; //mcu > HX711 no 2 sck pin
 
 //HX711 constructor (dout pin, sck pin)
 HX711_ADC LoadCell_1(HX711_dout_1, HX711_sck_1); //HX711 1
@@ -35,8 +35,10 @@ void setup() {
   float calibrationValue_1; // calibration value load cell 1
   float calibrationValue_2; // calibration value load cell 2
 
-  calibrationValue_1 = 471.47; // uncomment this if you want to set this value in the sketch
-  calibrationValue_2 = 461.12; // uncomment this if you want to set this value in the sketch
+  // calibrationValue_1 = 471.47; // uncomment this if you want to set this value in the sketch ********* OLD CODE ***********
+  calibrationValue_1 = -200.70; // uncomment this if you want to set this value in the sketch
+  //calibrationValue_2 = 461.12; // uncomment this if you want to set this value in the sketch ********* OLD CODE ***********
+  calibrationValue_2 = -216.61; // uncomment this if you want to set this value in the sketch
 #if defined(ESP8266) || defined(ESP32)
   //EEPROM.begin(512); // uncomment this if you use ESP8266 and want to fetch the value from eeprom
 #endif
@@ -78,10 +80,12 @@ void loop() {
       float a = LoadCell_1.getData();
       float b = LoadCell_2.getData();
       //Serial.print("Load_cell 1 output val: ");
-      Serial.print(a + 50);
+      // Serial.print(a + 50); ********* OLD CODE ***********
+      Serial.print(a);
       Serial.print(",");
       //Serial.print("    Load_cell 2 output val: ");
-      Serial.println(b + 50);
+      // Serial.println(b + 50); ********* OLD CODE ***********
+      Serial.println(b);
       Serial.print(",");
       newDataReady = 0;
       t = millis();
