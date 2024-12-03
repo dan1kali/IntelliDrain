@@ -1,6 +1,11 @@
 #include <Wire.h>
 #include <LiquidCrystal.h>    // Use this for parallel connection LCD
 
+
+
+// hello
+
+
 // Settings
 #define BTN_PIN             9                         // Pin that connects to the button (Pin 7 here)
 #define SAMPLING_FREQ_HZ    4                         // Sampling frequency (Hz)
