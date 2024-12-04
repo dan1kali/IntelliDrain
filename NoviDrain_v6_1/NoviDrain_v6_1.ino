@@ -25,7 +25,7 @@ Developed by Linh Vu 1/21/19
 int saline_rpm = 220; //Saline pump rpm: scaled 0 -255
 int abscess_rpm = 170;   //Saline pump rpm: scaled 0 -255
 int flush_duration = 20; //Saline flush duration: seconds
-float flush_frequency = 2; //Saline flush frequency: minutes
+float flush_frequency = 1; //Saline flush frequency: minutes
 bool bleyn = false; //true: use bluetooth app connection, false ignore bluetooth app
 bool verbosex = true;
 ////////////////////////////////////////////////////////////
@@ -253,13 +253,21 @@ void handle_pump_logic() {
 // FLUSH CYCLE START FUNCTION
 ////////////////////////////////////////////////////////////
 
+
+/*
+
+// changed millis() to current time, added first Serial.printIn
+// --> only brief hiccup after 60s, no flush. Still errors.
+
 int handle_flush_cycle() {
-  if (millis() - flush_timer_start >= flush_frequency*60.0*1000.0) {   
-      //Serial.println("Starting flush cycle"); 
-    
+  unsigned long current_time = millis();
+ 
+  Serial.println(current_time - flush_timer_start);
+  if (current_time - flush_timer_start >= flush_frequency*60.0*1000.0) {   
+      // Serial.println("Starting flush cycle"); 
       stopAbscess();
       startSalinePropulsion();
-      if (millis() - flush_timer_start > flush_frequency*60.0*1000.0 + flush_duration*1000.0){ //After flush duration is completed, restore normal function
+      if (current_time - flush_timer_start > flush_frequency*60.0*1000.0 + flush_duration*1000.0){ //After flush duration is completed, restore normal function
         //Flush cycle completed
         setup_timer(); //Reset time
         totalflushtime += flush_duration; //Log flush duration
@@ -270,6 +278,36 @@ int handle_flush_cycle() {
       }
   }
   return 1;
+}
+
+*/
+
+
+// working version, no one knows why
+int handle_flush_cycle() { 
+  unsigned long current_time = millis();
+  Serial.print("Time elapsed since last flush: ");
+  Serial.println(current_time - flush_timer_start);
+  
+  if (current_time - flush_timer_start >= flush_frequency * 60.0 * 1000.0) {   
+    Serial.println("Starting periodic flush cycle...");
+    // Start the flush cycle (stop abscess, start saline)
+    stopAbscess();
+    startSalinePropulsion();
+    
+    // Wait for the flush duration to complete
+    if (current_time - flush_timer_start >= flush_frequency * 60.0 * 1000.0 + flush_duration * 1000.0) {
+      // Reset timer after flush cycle
+      setup_timer();
+      totalflushtime += flush_duration; // Log flush duration
+      Serial.println("Flush cycle completed.");
+      return 1;
+    } else {
+      // Flush not yet completed
+      return 0;
+    }
+  }
+  return 1; // Default return value if time condition is not met
 }
 
 ////////////////////////////////////////////////////////////
