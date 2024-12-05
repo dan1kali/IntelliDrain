@@ -45,6 +45,9 @@ uint8_t btn_state = HIGH;
 uint8_t last_btn_state = HIGH;
 unsigned long last_dbnc_time = 0;
 
+// Flag to stop serial communication
+bool serialActive = true;  // Initially serial is active
+
 // Function to update OLED with weight
 void displayWeight(float weight) {
   display.clearDisplay();
@@ -59,8 +62,6 @@ void displayWeight(float weight) {
   display.display();
 }
 
-
-
 // Interrupt service routine for water flow sensor
 void detectRisingEdge() {
   pulseCount++;
@@ -69,106 +70,103 @@ void detectRisingEdge() {
 void setup() {
   // Serial monitor
   Serial.begin(115200);
-  Serial.println("Setup started"); // Debugging statement
-
+  
   // LCD initialization
   lcd.begin(16, 2);
-  Serial.println("LCD initialized"); // Debugging statement
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("IDLE");
 
   // OLED initialization
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
-    Serial.println("OLED initialization failed");
     for (;;); // Halt if OLED initialization fails
   }
   display.clearDisplay();
-  Serial.println("OLED initialized"); // Debugging statement
-
 
   // HX711 initialization
-  Serial.println("Initializing the scale");
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   scale.set_scale(CALIBRATION_FACTOR);
   scale.tare();
-  Serial.println("Scale initialized"); // Debugging statement
 
   // Button initialization
   pinMode(BTN_PIN, INPUT_PULLUP);
-  Serial.println("Button initialized"); // Debugging statement
 
   // Water flow sensor setup
   pinMode(flowSensorPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(flowSensorPin), detectRisingEdge, RISING);
-  Serial.println("Water flow sensor initialized"); // Debugging statement
 }
 
 void loop() {
-  // Handle button state for mode switching
-  int btn_reading = digitalRead(BTN_PIN);
-  if (btn_reading != last_btn_state) {
-    last_dbnc_time = millis();
+  // Check for serial input to stop communication
+  if (Serial.available() > 0) {
+    char input = Serial.read();
+    if (input == 's') {
+      serialActive = false;  // Stop serial communication
+    }
   }
-  if ((millis() - last_dbnc_time) > DEBOUNCE_DELAY) {
-    if (btn_reading != btn_state) {
-      btn_state = btn_reading;
-      if (btn_state == LOW) {
-        mode = (mode + 1) % NUM_MODES;
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        if (mode == MODE_IDLE) {
-          lcd.print("IDLE");
-          Serial.println("Mode switched to IDLE");
-        } else if (mode == MODE_RECORDING) {
-          lcd.print("Recording");
-          Serial.println("Mode switched to Recording");
+
+  // If serial communication is active, continue sending data
+  if (serialActive) {
+    // Handle mode switching via button press (unchanged)
+    int btn_reading = digitalRead(BTN_PIN);
+    if (btn_reading != last_btn_state) {
+      last_dbnc_time = millis();
+    }
+    if ((millis() - last_dbnc_time) > DEBOUNCE_DELAY) {
+      if (btn_reading != btn_state) {
+        btn_state = btn_reading;
+        if (btn_state == LOW) {
+          mode = (mode + 1) % NUM_MODES;
+          lcd.clear();
+          lcd.setCursor(0, 0);
+          if (mode == MODE_IDLE) {
+            lcd.print("IDLE");
+          } else if (mode == MODE_RECORDING) {
+            lcd.print("Recording");
+          }
         }
       }
     }
-  }
-  last_btn_state = btn_reading;
+    last_btn_state = btn_reading;
 
-if (scale.wait_ready_timeout(200)) {
-    float weight = scale.get_units(10); // Average of 10 readings
-    if (weight != 0) {
+    // Handle scale and water flow sensor data (unchanged)
+    if (scale.wait_ready_timeout(200)) {
+      float weight = scale.get_units(10); // Average of 10 readings
+      if (weight != 0) {
         displayWeight(weight); // Update OLED display
         Serial.print(weight);  // Send the weight value
-    } else {
+      } else {
         Serial.print("0");    // Default to 0 if no weight detected
+      }
+    } else {
+      Serial.print("0");        // Default to 0 if the scale isn't ready
     }
-} else {
-    Serial.print("0");        // Default to 0 if the scale isn't ready
-}
 
-// Add a delimiter between the variables
-Serial.print(",");             // Use a comma to separate weight and flow rate
+    // Add a delimiter between the variables
+    Serial.print(",");             // Use a comma to separate weight and flow rate
 
-// Send flow rate
-Serial.println(flowRate);      // Send the flow rate value to the Serial Plotter
-  // Handle water flow sensor data
-  if (mode == MODE_RECORDING) {
-    unsigned long currentTime = millis();
-    if (currentTime - lastSampleTime >= SAMPLING_DELAY) {
-      lastSampleTime = currentTime;
-      flowRate = (pulseCount * 180000 / 5880); // Calculate flow rate in mL/min
-      pulseCount = 0;
+    // Send flow rate
+    Serial.println(flowRate);      // Send the flow rate value to the Serial Plotter
 
-      // Update LCD with flow rate
-      lcd.setCursor(0, 0);
-      lcd.print("Flow Rate:");
-      lcd.setCursor(0, 1);
-      lcd.print(flowRate);
-      lcd.print(" mL/min");
+    // Handle water flow sensor data (unchanged)
+    if (mode == MODE_RECORDING) {
+      unsigned long currentTime = millis();
+      if (currentTime - lastSampleTime >= SAMPLING_DELAY) {
+        lastSampleTime = currentTime;
+        flowRate = (pulseCount * 180000 / 5880); // Calculate flow rate in mL/min
+        pulseCount = 0;
 
-      // Debugging info
-      // Serial.print("Flow Rate: ");
-      // Serial.print(flowRate);
-      // Serial.println(" mL/min");
+        // Update LCD with flow rate
+        lcd.setCursor(0, 0);
+        lcd.print("Flow Rate:");
+        lcd.setCursor(0, 1);
+        lcd.print(flowRate);
+        lcd.print(" mL/min");
+      }
     }
   }
 
-  // Handle HX711 data
+  // Handle HX711 data (unchanged)
   if (scale.wait_ready_timeout(200)) {
     float reading = scale.get_units(10); // Average of 10 readings
     if (reading != 0) {
@@ -178,10 +176,8 @@ Serial.println(flowRate);      // Send the flow rate value to the Serial Plotter
     Serial.println("HX711 not found.");
   }
 
-  // Handle button press for HX711 tare
+  // Handle button press for HX711 tare (unchanged)
   if (button.getSingleDebouncedPress()) {
     scale.tare();
-    Serial.println("Tare...");
   }
 }
-

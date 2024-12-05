@@ -18,3 +18,5 @@ Libraries/
 *.log
 
 .DS_Store
+
+serial_output.txt
