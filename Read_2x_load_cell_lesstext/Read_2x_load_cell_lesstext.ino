@@ -26,6 +26,8 @@ HX711_ADC LoadCell_2(HX711_dout_2, HX711_sck_2); //HX711 2
 const int calVal_eepromAdress_1 = 0; // eeprom adress for calibration value load cell 1 (4 bytes)
 const int calVal_eepromAdress_2 = 4; // eeprom adress for calibration value load cell 2 (4 bytes)
 unsigned long t = 0;
+unsigned long startMillis; // To store the start time
+
 
 void setup() {
   Serial.begin(57600); delay(10);
@@ -61,6 +63,10 @@ void setup() {
   if (LoadCell_2.getTareTimeoutFlag()) {
     Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations");
   }
+
+  startMillis = millis();
+
+
   LoadCell_1.setCalFactor(calibrationValue_1); // user set calibration value (float)
   LoadCell_2.setCalFactor(calibrationValue_2); // user set calibration value (float)
   Serial.println("Startup is complete");
@@ -85,8 +91,15 @@ void loop() {
       Serial.print(",");
       //Serial.print("    Load_cell 2 output val: ");
       // Serial.println(b + 50); ********* OLD CODE ***********
-      Serial.println(b);
+      Serial.print(b);
+
+            // Get total time in seconds since the program started
+      unsigned long currentMillis = millis();
+      float totalTimeInSeconds = (currentMillis - startMillis) / 1000.0;  // Convert to seconds
       Serial.print(",");
+      Serial.print(totalTimeInSeconds, 3); // Print time rounded to 0.001 seconds
+      Serial.println();             // End the line
+
       newDataReady = 0;
       t = millis();
     }

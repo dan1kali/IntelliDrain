@@ -3,15 +3,6 @@
 #include "HX711.h"            // For the load cell
 #include <Adafruit_GFX.h>     // For the OLED display
 #include <Adafruit_SSD1306.h> // For the OLED display
-#include <Pushbutton.h>       // For the button debounce
-
-// Settings for water flow sensor
-#define BTN_PIN             9    // Button pin
-#define SAMPLING_DELAY      500  // Delay between samples (ms)
-#define DEBOUNCE_DELAY      30   // Button debounce delay (ms)
-#define MODE_IDLE           0    // Idle mode
-#define MODE_RECORDING      1    // Recording mode
-#define NUM_MODES           2    // Total modes
 
 // Settings for HX711 load cell
 const int LOADCELL_DOUT_PIN = 2;
@@ -30,20 +21,17 @@ HX711 scale;
 // LCD setup
 LiquidCrystal lcd(12, 11, 5, 6, 7, 8);
 
-// Button for HX711
-Pushbutton button(4);
-
 // Water flow sensor
 const int flowSensorPin = 19; // Pin 19 for water flow sensor (interrupt 4)
 volatile int pulseCount = 0;
 unsigned int flowRate = 0;
 unsigned long lastSampleTime = 0;
 
-// Mode tracking
-uint8_t mode = MODE_IDLE;
-uint8_t btn_state = HIGH;
-uint8_t last_btn_state = HIGH;
-unsigned long last_dbnc_time = 0;
+// Time tracking (for continuous time)
+unsigned long startMillis; // To store the start time
+
+// Sampling delay for flow rate (ms)
+#define SAMPLING_DELAY 500
 
 // Flag to stop serial communication
 bool serialActive = true;  // Initially serial is active
@@ -75,7 +63,7 @@ void setup() {
   lcd.begin(16, 2);
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("IDLE");
+  lcd.print("Recording");
 
   // OLED initialization
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
@@ -88,12 +76,12 @@ void setup() {
   scale.set_scale(CALIBRATION_FACTOR);
   scale.tare();
 
-  // Button initialization
-  pinMode(BTN_PIN, INPUT_PULLUP);
-
   // Water flow sensor setup
   pinMode(flowSensorPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(flowSensorPin), detectRisingEdge, RISING);
+
+  // Store the start time in millis() when the program begins
+  startMillis = millis();
 }
 
 void loop() {
@@ -107,29 +95,7 @@ void loop() {
 
   // If serial communication is active, continue sending data
   if (serialActive) {
-    // Handle mode switching via button press (unchanged)
-    int btn_reading = digitalRead(BTN_PIN);
-    if (btn_reading != last_btn_state) {
-      last_dbnc_time = millis();
-    }
-    if ((millis() - last_dbnc_time) > DEBOUNCE_DELAY) {
-      if (btn_reading != btn_state) {
-        btn_state = btn_reading;
-        if (btn_state == LOW) {
-          mode = (mode + 1) % NUM_MODES;
-          lcd.clear();
-          lcd.setCursor(0, 0);
-          if (mode == MODE_IDLE) {
-            lcd.print("IDLE");
-          } else if (mode == MODE_RECORDING) {
-            lcd.print("Recording");
-          }
-        }
-      }
-    }
-    last_btn_state = btn_reading;
-
-    // Handle scale and water flow sensor data (unchanged)
+    // Handle scale data (unchanged)
     if (scale.wait_ready_timeout(200)) {
       float weight = scale.get_units(10); // Average of 10 readings
       if (weight != 0) {
@@ -146,27 +112,32 @@ void loop() {
     Serial.print(",");             // Use a comma to separate weight and flow rate
 
     // Send flow rate
-    Serial.println(flowRate);      // Send the flow rate value to the Serial Plotter
+    Serial.print(flowRate);      // Send the flow rate value to the Serial Plotter
 
-    // Handle water flow sensor data (unchanged)
-    if (mode == MODE_RECORDING) {
-      unsigned long currentTime = millis();
-      if (currentTime - lastSampleTime >= SAMPLING_DELAY) {
-        lastSampleTime = currentTime;
-        flowRate = (pulseCount * 180000 / 5880); // Calculate flow rate in mL/min
-        pulseCount = 0;
+    // Get total time in seconds since the program started
+    unsigned long currentMillis = millis();
+    float totalTimeInSeconds = (currentMillis - startMillis) / 1000.0;  // Convert to seconds
+    Serial.print(",");
+    Serial.print(totalTimeInSeconds, 3); // Print time rounded to 0.001 seconds
+    Serial.println();             // End the line
 
-        // Update LCD with flow rate
-        lcd.setCursor(0, 0);
-        lcd.print("Flow Rate:");
-        lcd.setCursor(0, 1);
-        lcd.print(flowRate);
-        lcd.print(" mL/min");
-      }
+    // Handle water flow sensor data
+    unsigned long currentTime = millis();
+    if (currentTime - lastSampleTime >= SAMPLING_DELAY) {
+      lastSampleTime = currentTime;
+      flowRate = (pulseCount * 180000 / 5880); // Calculate flow rate in mL/min
+      pulseCount = 0;
+
+      // Update LCD with flow rate
+      lcd.setCursor(0, 0);
+      lcd.print("Flow Rate:");
+      lcd.setCursor(0, 1);
+      lcd.print(flowRate);
+      lcd.print(" mL/min");
     }
   }
 
-  // Handle HX711 data (unchanged)
+  // Handle HX711 data
   if (scale.wait_ready_timeout(200)) {
     float reading = scale.get_units(10); // Average of 10 readings
     if (reading != 0) {
@@ -174,10 +145,5 @@ void loop() {
     }
   } else {
     Serial.println("HX711 not found.");
-  }
-
-  // Handle button press for HX711 tare (unchanged)
-  if (button.getSingleDebouncedPress()) {
-    scale.tare();
   }
 }

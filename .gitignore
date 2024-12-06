@@ -20,3 +20,5 @@ Libraries/
 .DS_Store
 
 serial_output.txt
+serial_1_weight.txt
+serial_2_occlusion.txt
