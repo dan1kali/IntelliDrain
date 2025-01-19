@@ -59,7 +59,9 @@ void setup() {
   Serial.println("LCD initialized"); // Debugging statement
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print("IDLE");
+  lcd.print("Flow Rate:");
+  lcd.setCursor(0, 1);
+  lcd.print("0 mL/min");
 
   // OLED initialization
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {

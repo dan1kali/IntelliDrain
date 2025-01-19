@@ -1,3 +1,5 @@
+
+
 import serial
 
 ser = serial.Serial('/dev/cu.usbmodem14201', 57600)
@@ -9,3 +11,4 @@ with open('serial_output.txt', 'w') as file:
             data = ser.readline().decode('utf-8').strip()
             file.write(data + '\n')
             print(data)
+
