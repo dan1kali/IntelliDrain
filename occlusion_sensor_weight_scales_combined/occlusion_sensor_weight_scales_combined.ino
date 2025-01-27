@@ -9,31 +9,28 @@
 #endif
 
 
-// Occlusion sensor load cell setup
+// Occlusion sensor, Weight scale setup pins for load cell
 const int LOADCELL_SCK_PIN = 3;
 const int LOADCELL_DOUT_PIN = 2;
-
-// HX711 object
-HX711_ADC LoadCell_0(LOADCELL_SCK_PIN, LOADCELL_DOUT_PIN); //HX711 0
-
-//Weight scale setup pins:
 const int weightscale_HX711_sck_1 = 5; //mcu > HX711 no 1 sck pin
 const int weightscale_HX711_dout_1 = 4; //mcu > HX711 no 1 dout pin
 const int weightscale_HX711_sck_2 = 9; //mcu > HX711 no 2 sck pin
 const int weightscale_HX711_dout_2 = 8; //mcu > HX711 no 2 dout pin
 
-//HX711 constructor for weight scales (dout pin, sck pin)
+// HX711 constructor for sensor, weight scales (dout pin, sck pin)
+
+HX711_ADC LoadCell_0(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN); //HX711 0
 HX711_ADC LoadCell_1(weightscale_HX711_dout_1, weightscale_HX711_sck_1); //HX711 1
 HX711_ADC LoadCell_2(weightscale_HX711_dout_2, weightscale_HX711_sck_2); //HX711 2
 
+// Initialize values
 const int calVal_eepromAdress_1 = 0; // eeprom adress for calibration value load cell 1 (4 bytes)
 const int calVal_eepromAdress_2 = 4; // eeprom adress for calibration value load cell 2 (4 bytes)
 unsigned long t = 0;
 unsigned long startMillis; // To store the start time
 
-
-// Timer for weight updates
-const int updateInterval = 1000; //How often data is collected in milliseconds
+// Update interval
+const int updateInterval = 954; //How often data is collected in milliseconds
 
 // OLED Display
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -52,7 +49,7 @@ void displayWeight(float weight) {
   display.println("Weight:");
   display.setCursor(0, 30);
   display.setTextSize(2);
-  display.print(weight, 4); // Show 4 decimal places
+  display.print(weight, 2); // Show 4 decimal places
   display.print(" g");
 
   display.display();
@@ -110,7 +107,6 @@ void setup() {
 
   startMillis = millis();
 
-
   LoadCell_0.setCalFactor(calibrationValue_1); // user set calibration value (float)
   LoadCell_1.setCalFactor(calibrationValue_1); // user set calibration value (float)
   LoadCell_2.setCalFactor(calibrationValue_2); // user set calibration value (float)
@@ -125,7 +121,6 @@ void setup() {
 
 
 void loop() {
-  unsigned long currentTime = millis();
   static boolean newDataReady = 0;
 
   // check for new data/start next conversion:
@@ -162,18 +157,20 @@ void loop() {
   if (Serial.available() > 0) {
     char inByte = Serial.read();
     if (inByte == 't') {
-      LoadCell_1.tareNoDelay();
-      LoadCell_2.tareNoDelay();
+      char secondByte = Serial.read();  // Read the second character for the specific tare operation
+      if (secondByte == 'o') {
+        LoadCell_0.tareNoDelay();
+      }
+      else if (secondByte == 's') {
+        LoadCell_1.tareNoDelay();
+        LoadCell_2.tareNoDelay();
+      }
+      else if (secondByte == 'a') {
+        LoadCell_0.tareNoDelay();
+        LoadCell_1.tareNoDelay();
+        LoadCell_2.tareNoDelay();
+      }
     }
   }
-
-  //check if last tare operation is complete
-  if (LoadCell_1.getTareStatus() == true) {
-    //Serial.println("Tare load cell 1 complete");
-  }
-  if (LoadCell_2.getTareStatus() == true) {
-    //Serial.println("Tare load cell 2 complete");
-  }
-
 
 }
