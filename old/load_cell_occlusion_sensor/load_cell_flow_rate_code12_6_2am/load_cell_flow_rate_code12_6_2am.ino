@@ -19,7 +19,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 HX711 scale;
 
 // LCD setup
-LiquidCrystal lcd(12, 11, 5, 6, 7, 8);
+// LiquidCrystal lcd(12, 11, 5, 6, 7, 8);
 
 // Timer for weight updates
 unsigned long lastWeightUpdate = 0; // Tracks the last weight update time
@@ -54,14 +54,14 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Setup started"); // Debugging statement
 
-  // LCD initialization
+/*   // LCD initialization
   lcd.begin(16, 2);
   Serial.println("LCD initialized"); // Debugging statement
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Flow Rate:");
   lcd.setCursor(0, 1);
-  lcd.print("0 mL/min");
+  lcd.print("0 mL/min"); */
 
   // OLED initialization
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
