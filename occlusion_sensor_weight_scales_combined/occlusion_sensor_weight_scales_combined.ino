@@ -12,7 +12,6 @@
 // Occlusion sensor load cell setup
 const int LOADCELL_SCK_PIN = 3;
 const int LOADCELL_DOUT_PIN = 2;
-#define CALIBRATION_FACTOR -408.7
 
 // HX711 object
 HX711_ADC LoadCell_0(LOADCELL_SCK_PIN, LOADCELL_DOUT_PIN); //HX711 0
@@ -144,12 +143,12 @@ void loop() {
       Serial.print(", ");
 
 
-      float weight0 = LoadCell_0.get_units(10); // Average of 10 readings
+      float weight0 = LoadCell_0.getData(); // Average of 10 readings
       displayWeight(weight0); // Update OLED display
       Serial.print(weight0);
       Serial.print(", ");
-      float weight1 = LoadCell_1.get_units(10);
-      float weight2 = LoadCell_2.get_units(10);
+      float weight1 = LoadCell_1.getData();
+      float weight2 = LoadCell_2.getData();
       Serial.print(weight1);
       Serial.print(", ");
       Serial.println(weight2);
