@@ -12,10 +12,10 @@
 // Occlusion sensor, Weight scale setup pins for load cell
 const int LOADCELL_SCK_PIN =12;
 const int LOADCELL_DOUT_PIN = 11;
-const int weightscale_HX711_sck_1 = 8; //mcu > HX711 no 1 sck pin
-const int weightscale_HX711_dout_1 = 7; //mcu > HX711 no 1 dout pin
-const int weightscale_HX711_sck_2 = 10; //mcu > HX711 no 2 sck pin
-const int weightscale_HX711_dout_2 = 9; //mcu > HX711 no 2 dout pin
+const int weightscale_HX711_sck_1 = 10; //mcu > HX711 no 1 sck pin
+const int weightscale_HX711_dout_1 = 9; //mcu > HX711 no 1 dout pin
+const int weightscale_HX711_sck_2 = 8; //mcu > HX711 no 2 sck pin
+const int weightscale_HX711_dout_2 = 7; //mcu > HX711 no 2 dout pin
 
 // HX711 constructor for sensor, weight scales (dout pin, sck pin)
 

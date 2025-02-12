@@ -10,12 +10,12 @@
 
 
 // Occlusion sensor, Weight scale setup pins for load cell
-const int LOADCELL_SCK_PIN = 3;
-const int LOADCELL_DOUT_PIN = 2;
-const int weightscale_HX711_sck_1 = 5; //mcu > HX711 no 1 sck pin
-const int weightscale_HX711_dout_1 = 4; //mcu > HX711 no 1 dout pin
-const int weightscale_HX711_sck_2 = 7; //mcu > HX711 no 2 sck pin
-const int weightscale_HX711_dout_2 = 6; //mcu > HX711 no 2 dout pin
+const int LOADCELL_SCK_PIN = 12;
+const int LOADCELL_DOUT_PIN = 11;
+const int weightscale_HX711_sck_1 = 8; //mcu > HX711 no 1 sck pin
+const int weightscale_HX711_dout_1 = 7; //mcu > HX711 no 1 dout pin
+const int weightscale_HX711_sck_2 = 10; //mcu > HX711 no 2 sck pin
+const int weightscale_HX711_dout_2 = 9; //mcu > HX711 no 2 dout pin
 
 // HX711 constructor for sensor, weight scales (dout pin, sck pin)
 
@@ -45,7 +45,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 /////////////////////////////////New Part from Lauryn//////////////////////////////////////
 
 // Pins for LEDs and button
-const byte redPin = 12, bluePin = 11, greenPin = 10, whitePin = 7;  // Pins for LEDs
+const byte redPin = 6, bluePin = 5, greenPin = 4, whitePin = 3;  // Pins for LEDs
 const byte buttonPin = 6;  // Pin for button
 int sensor = 0;
 int baseline = 400;  // Default value before baseline is calculated
