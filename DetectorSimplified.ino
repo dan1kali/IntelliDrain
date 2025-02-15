@@ -90,7 +90,7 @@ void displayWeightAndTime(float weight, unsigned long currentTime) {
 void setup() {
   ///// SERIAL COMMUNICATION INITIALIZATION /////
   Serial.begin(115200);
-  Serial.println("\nStarting...");
+  Serial.println("Starting...");
 
   ///// OLED INITIALIZATION /////
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
@@ -199,9 +199,9 @@ void loop() {
     redLEDActive = false;  // Reset the red LED active flag
     digitalWrite(greenPin, HIGH);  // Reactivate green LED
     blueLEDOffCount = 0;  // Reset the blue LED off counter
-   Serial.println("Red LED turned off. Resume.");
-   delay(200);  // Simple debounce delay
- }
+    Serial.println("Red LED turned off. Resume.");
+    delay(200);  // Simple debounce delay
+  }
 
   if (newDataReady) {
     if (millis() > t + updateInterval) {
@@ -220,12 +220,6 @@ void loop() {
       Serial.print(weight1);
       Serial.print(", ");
       Serial.println(weight2);
-
-      // Debugging the weight value and threshold
-      Serial.print("Weight0: ");
-      Serial.print(weight0);
-      Serial.print(" Threshold: ");
-      Serial.println(threshold);
 
       if (redLEDActive) {
         digitalWrite(greenPin, LOW);  // Turn off green LED
@@ -283,6 +277,7 @@ void loop() {
       // ** New logic for green LED to stay off when any other light is on ** 
       if (weight0 < threshold && !redLEDActive && !blueLEDActive) {
         digitalWrite(greenPin, HIGH); // Turn on green LED only if no other LED is active
+        blueLEDOffCount = 0;  // Reset the blue LED off counter
       } else {
         digitalWrite(greenPin, LOW); // Turn off green LED otherwise
       }
@@ -291,4 +286,24 @@ void loop() {
       t = millis();
     }
   }
-}
+
+  // receive command from serial terminal, send 't' to initiate tare operation:
+  if (Serial.available() > 0) {
+    char inByte = Serial.read();
+    if (inByte == 't') {
+      char secondByte = Serial.read();  // Read the second character for the specific tare operation
+      if (secondByte == 'o') {
+        LoadCell_0.tareNoDelay();
+      }
+      else if (secondByte == 's') {
+        LoadCell_1.tareNoDelay();
+        LoadCell_2.tareNoDelay();
+      }
+      else if (secondByte == 'a') {
+        LoadCell_0.tareNoDelay();
+        LoadCell_1.tareNoDelay();
+        LoadCell_2.tareNoDelay();
+      }
+    }
+  }
+} 
