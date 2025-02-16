@@ -85,7 +85,7 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(pinPwrA, INPUT_PULLUP); //SPDT
   pinMode(pinPwrB, INPUT_PULLUP); //SPDT
-  pinMode(command_in_pin, INPUT_PULLDOWN); //SPDT
+  pinMode(command_in_pin, INPUT); //SPDT
   
 
   //Update pumps rpm

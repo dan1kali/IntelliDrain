@@ -159,6 +159,7 @@ void setup() {
   digitalWrite(redPin, LOW);  
   digitalWrite(bluePin, LOW);  
   digitalWrite(greenPin, LOW);  
+  digitalWrite(command_out_pin, LOW);  
   Serial.println("System on!");
   
   ///// WAIT FOR THRESHOLD INPUT ///// 
@@ -204,8 +205,6 @@ void loop() {
     Serial.println("Red LED turned off. Resume.");
     delay(200);  // Simple debounce delay
   }
-
-  digitalWrite(command_out_pin, LOW); // Send command to start flush pump
 
   if (newDataReady) {
     if (millis() > t + updateInterval) {
