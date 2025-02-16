@@ -16,6 +16,7 @@ const int WEIGHTSCALE2_SCK_PIN = 10; // Weight Scale 2 SCK
 const int WEIGHTSCALE2_DOUT_PIN = 9; // Weight Scale 2 DOUT
 const byte redPin = 6, bluePin = 5, greenPin = 4, whitePin = 3;  // Pins for LEDs
 const byte buttonPin = 2;  // Pin for button
+const int command_out_pin = 30; //output to flushing Arduino
 
 ///// OLED DISPLAY SETUP /////
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -147,6 +148,7 @@ void setup() {
   Serial.println("Weight scales startup is complete");
 
   ///// LED PIN INITIALIZATION /////
+  pinMode(command_out_pin, OUTPUT);
   pinMode(redPin, OUTPUT);
   pinMode(bluePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
@@ -203,6 +205,8 @@ void loop() {
     delay(200);  // Simple debounce delay
   }
 
+  digitalWrite(command_out_pin, LOW); // Send command to start flush pump
+
   if (newDataReady) {
     if (millis() > t + updateInterval) {
       // Display elapsed time
@@ -247,6 +251,9 @@ void loop() {
         // First 5 seconds: Blue LED stays on
         if (elapsedTime < blueLEDOnDuration) {
           digitalWrite(bluePin, HIGH);  // Ensure the blue LED stays on
+          digitalWrite(command_out_pin, HIGH); // Send command to start flush pump
+          Serial.println("command out pin high");
+
         }
         // Last 5 seconds: Blue LED flashes
         else if (elapsedTime >= blueLEDOnDuration && elapsedTime < blueLEDTotalDuration) {
@@ -254,6 +261,8 @@ void loop() {
           if (millis() - lastFlashTime >= flashInterval) {
             blueLEDState = !blueLEDState;  // Toggle LED state
             digitalWrite(bluePin, blueLEDState ? HIGH : LOW);  // Apply the new state
+            digitalWrite(command_out_pin, HIGH); // Send command to start flush pump
+            Serial.println("command out pin high (flashing)");
             lastFlashTime = millis();  // Update the last flash time
           }
         }
@@ -261,6 +270,8 @@ void loop() {
         // After 10 seconds, turn off the blue LED and restore green LED
         if (elapsedTime >= blueLEDTotalDuration) {
           digitalWrite(bluePin, LOW);  // Turn off blue LED
+          digitalWrite(command_out_pin, LOW); // Send command to start flush pump
+          Serial.println("command out pin low");
           blueLEDActive = false;  // Reset the flag
           digitalWrite(greenPin, HIGH);  // Turn green LED back on after blue LED is off
           blueLEDOffCount++;  // Increment the blue LED off counter
@@ -284,6 +295,8 @@ void loop() {
 
       newDataReady = 0;
       t = millis();
+
+
     }
   }
 
