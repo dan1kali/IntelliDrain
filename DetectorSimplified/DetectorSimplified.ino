@@ -102,7 +102,7 @@ void setup() {
   Serial.println("OLED initialized"); // OLED display successfully initialized and ready to be use
 
   ///// CALIBRATION VALUES /////
-  float calibrationValue_0 = -408.7; // Calibration value for sensor load cell
+  float calibrationValue_0 = -286.04; // Calibration value for sensor load cell
   float calibrationValue_1 = -200.43; // Calibration value for weight scale 1 load cell
   float calibrationValue_2 = -216.33; // Calibration value for weight scale 2 load cell
 
@@ -224,17 +224,17 @@ void loop() {
       if (redLEDActive) {
         digitalWrite(greenPin, LOW);  // Turn off green LED
         digitalWrite(bluePin, LOW);   // Turn off blue LED
-
-            } else {
+        } 
+        
+        else {
         // Check if the blue LED is not active (i.e., green LED should remain on)
         if (!blueLEDActive) {
-          if (weight0 >= threshold) {
-            if (!blueLEDActive) {  // Only activate if the blue LED is not already on
-              digitalWrite(bluePin, HIGH);  // Turn on blue LED
-              blueLEDStartTime = millis();  // Record the start time
-              blueLEDActive = true;  // Set the flag to true to track the blue LED timing
-              digitalWrite(greenPin, LOW);  // Turn off green LED when blue is activated
-            }
+          if (weight0 <= threshold) {
+            digitalWrite(bluePin, HIGH);  // Turn on blue LED
+            blueLEDStartTime = millis();  // Record the start time
+            blueLEDActive = true;  // Set the flag to true to track the blue LED timing
+            digitalWrite(greenPin, LOW);  // Turn off green LED when blue is activated
+          
           }
         }
       }

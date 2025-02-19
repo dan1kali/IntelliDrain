@@ -16,7 +16,7 @@ const int WEIGHTSCALE2_SCK_PIN = 10; // Weight Scale 2 SCK
 const int WEIGHTSCALE2_DOUT_PIN = 9; // Weight Scale 2 DOUT
 const byte redPin = 6, bluePin = 5, greenPin = 4, whitePin = 3;  // Pins for LEDs
 const byte buttonPin = 2;  // Pin for button
-const int command_out_pin = 30; //output to flushing Arduino
+const int command_out_pin = 30; //output to flushing Arduino/Users/macbook/Desktop/Arduino/DetectorSimplified_autopump/DetectorSimplified_autopump.ino
 
 ///// OLED DISPLAY SETUP /////
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -71,8 +71,8 @@ void displayWeightAndTime(float weight, unsigned long currentTime) {
   // Weight display
   display.setTextSize(2); 
   display.setCursor(0, 30); // Text will be drawn starting 30 pixels down from the top and at the far-left edge
-  display.print(weight, 4); // Print weight variable with 4 decimal places
-  display.print(" g"); // Display grams (g) unit after weight variable
+  display.print(weight, 2); // Print weight variable with 4 decimal places
+  display.print(" mN"); // Display grams (g) unit after weight variable
 
   // Current Time display
   display.setTextSize(1);
@@ -103,7 +103,7 @@ void setup() {
   Serial.println("OLED initialized"); // OLED display successfully initialized and ready to be use
 
   ///// CALIBRATION VALUES /////
-  float calibrationValue_0 = -408.7; // Calibration value for sensor load cell
+  float calibrationValue_0 = -286.04; // Calibration value for sensor load cell
   float calibrationValue_1 = -200.43; // Calibration value for weight scale 1 load cell
   float calibrationValue_2 = -216.33; // Calibration value for weight scale 2 load cell
 
@@ -228,16 +228,17 @@ void loop() {
         digitalWrite(greenPin, LOW);  // Turn off green LED
         digitalWrite(bluePin, LOW);   // Turn off blue LED
 
-            } else {
+        } 
+        
+        else {
         // Check if the blue LED is not active (i.e., green LED should remain on)
         if (!blueLEDActive) {
-          if (weight0 >= threshold) {
-            if (!blueLEDActive) {  // Only activate if the blue LED is not already on
-              digitalWrite(bluePin, HIGH);  // Turn on blue LED
-              blueLEDStartTime = millis();  // Record the start time
-              blueLEDActive = true;  // Set the flag to true to track the blue LED timing
-              digitalWrite(greenPin, LOW);  // Turn off green LED when blue is activated
-            }
+          if (weight0 <= threshold) {
+            digitalWrite(bluePin, HIGH);  // Turn on blue LED
+            blueLEDStartTime = millis();  // Record the start time
+            blueLEDActive = true;  // Set the flag to true to track the blue LED timing
+            digitalWrite(greenPin, LOW);  // Turn off green LED when blue is activated
+          
           }
         }
       }
