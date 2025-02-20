@@ -25,7 +25,7 @@ Developed by Linh Vu 1/21/19
 int saline_rpm = 220; //Saline pump rpm: scaled 0 -255
 int abscess_rpm = 170;   //Saline pump rpm: scaled 0 -255
 int flush_duration = 20; //Saline flush duration: seconds
-float flush_frequency = 1; //Saline flush frequency: minutes
+float flush_frequency = 100; //Saline flush frequency: minutes
 bool bleyn = false; //true: use bluetooth app connection, false ignore bluetooth app
 bool verbosex = true;
 ////////////////////////////////////////////////////////////

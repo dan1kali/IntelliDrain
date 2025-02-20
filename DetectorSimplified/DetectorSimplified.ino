@@ -70,7 +70,7 @@ void displayWeightAndTime(float weight, unsigned long currentTime) {
   // Weight display
   display.setTextSize(2); 
   display.setCursor(0, 30); // Text will be drawn starting 30 pixels down from the top and at the far-left edge
-  display.print(weight, 4); // Print weight variable with 4 decimal places
+  display.print(weight, 2); // Print weight variable with 4 decimal places
   display.print(" g"); // Display grams (g) unit after weight variable
 
   // Current Time display
@@ -275,7 +275,7 @@ void loop() {
       }
 
       // ** New logic for green LED to stay off when any other light is on ** 
-      if (weight0 < threshold && !redLEDActive && !blueLEDActive) {
+      if (weight0 > threshold && !redLEDActive && !blueLEDActive) {
         digitalWrite(greenPin, HIGH); // Turn on green LED only if no other LED is active
         blueLEDOffCount = 0;  // Reset the blue LED off counter
       } else {
