@@ -133,6 +133,8 @@ void loop() {
   //////////////////////////////////////////////////////////////
 
 
+  delay(500);
+
   int signal = digitalRead(command_in_pin);  // Read the signal from pin 13
     Serial.print("command_in_pin is: ");
     Serial.println(signal);
@@ -148,8 +150,10 @@ void loop() {
     Serial.println(clog_yn);
   }
 
+
   // Handle pump logic based on sensor readings and states
   handle_pump_logic();
+  
 }
 
 
