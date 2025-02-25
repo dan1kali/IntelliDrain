@@ -162,7 +162,9 @@ void setup() {
   digitalWrite(command_out_pin, LOW);  
   Serial.println("System on!");
   
-  ///// WAIT FOR THRESHOLD INPUT ///// 
+
+
+  /* ///// WAIT FOR THRESHOLD INPUT ///// 
   while (!Serial);  // Wait for the serial port to connect (necessary for some boards)
   
   Serial.println("Enter the threshold value:");
@@ -172,7 +174,9 @@ void setup() {
   
   // Optionally, print the threshold to confirm it has been set
   Serial.print("Threshold set to: ");
-  Serial.println(threshold);
+  Serial.println(threshold); */
+
+  threshold = -100;
 
   ///// LED CONTROL AFTER THRESHOLD SET ///// 
   digitalWrite(whitePin, LOW);  // Turn off white LED
