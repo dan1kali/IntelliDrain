@@ -45,6 +45,7 @@ unsigned long absess_flush_timer_start = 0; //Flush performed when clog is detec
 unsigned long absess_flush_timer_limit = 0;
 unsigned long flush_timer_start = 0; //Flush performed when periodic flush is performed
 unsigned long flush_timer_limit = 0;
+unsigned long signalHighStartTime = 0; // Variable to store the start time
 bool timer_enabled = true;
 
 // Flags and states
@@ -140,15 +141,22 @@ void loop() {
     Serial.println(signal);
 
   if (signal == HIGH) {
-    clog_yn = true; 
-    Serial.print("clog_yn is: ");
-    Serial.println(clog_yn);
-
-  } else {
-    clog_yn = false; 
-    Serial.print("clog_yn is: ");
-    Serial.println(clog_yn);
-  }
+      if (signalHighStartTime == 0) {
+        // Record the time when the signal first goes HIGH
+        signalHighStartTime = millis();
+      } else if (millis() - signalHighStartTime >= 20) {
+        // Check if the signal has been HIGH for more than 50 ms
+        clog_yn = true;
+        Serial.print("clog_yn is: ");
+        Serial.println(clog_yn);
+      }
+    } else {
+      // Reset the start time if the signal is not HIGH
+      signalHighStartTime = 0;
+      clog_yn = false;
+      Serial.print("clog_yn is: ");
+      Serial.println(clog_yn);
+    }
 
 
   // Handle pump logic based on sensor readings and states
