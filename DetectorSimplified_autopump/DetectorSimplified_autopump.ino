@@ -57,32 +57,6 @@ unsigned long flashInterval = 500;  // Flash interval in milliseconds
 unsigned long lastFlashTime = 0;    // Store the time of the last flash
 bool blueLEDState = false;          // Track whether blue LED is on or off
 
-///// DISPLAY FUNCTION /////
-// Function to update OLED with weight and current time
-void displayWeightAndTime(float weight, unsigned long currentTime) {
-  display.clearDisplay(); // Clears display
-  display.setTextColor(WHITE); // Text color is white
-
-  // Weight title display
-  display.setTextSize(1); 
-  display.setCursor(0, 10); // Text will be drawn starting 10 pixels down from the top and at the far-left edge
-  display.println("Weight:");
-  
-  // Weight display
-  display.setTextSize(2); 
-  display.setCursor(0, 30); // Text will be drawn starting 30 pixels down from the top and at the far-left edge
-  display.print(weight, 2); // Print weight variable with 4 decimal places
-  display.print(" g"); // Display grams (g) unit after weight variable
-
-  // Current Time display
-  display.setTextSize(1);
-  display.setCursor(0, 55); // Text will be drawn starting 55 pixels down from the top and at the far-left edge
-  display.print("Time: ");
-  display.print(currentTime); // Print currentTime variable
-  display.print(" ms"); // Display grams (g) unit after weight variable
-
-  display.display(); // Updates screen with new content
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////// SETUP ///////////////////////////////////////////
@@ -129,14 +103,11 @@ void setup() {
   } // Loop continuously attempts to stabilize and tare each load cell until they are all ready
   // Checks whether the tare operation failed due to timing out. If a timeout is detected, an error message displays.
   if (LoadCell_0.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 no.0 wiring and pin designations (occlusion sensor)");
-  }
+    Serial.println("Timeout, check MCU>HX711 no.0 wiring and pin designations (occlusion sensor)"); }
    if (LoadCell_1.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 no.1 wiring and pin designations (weight scale 1)");
-  }
+    Serial.println("Timeout, check MCU>HX711 no.1 wiring and pin designations (weight scale 1)"); }
   if (LoadCell_2.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations (weight scale 2)");
-  }
+    Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations (weight scale 2)"); }
 
   ///// CURRENT TIME /////
   startMillis = millis(); // Stores time, in milliseconds, since the Arduino was powered on or reset (current time) ****************************
@@ -212,21 +183,12 @@ void loop() {
 
   if (newDataReady) {
     if (millis() > t + updateInterval) {
-      // Display elapsed time
-      float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
-      Serial.print(totalTimeinSeconds, 3);
-      Serial.print(", ");
 
-      // Display current sensor weight values
-      float weight0 = LoadCell_0.getData(); 
-      displayWeightAndTime(weight0, currentMillis);
-      Serial.print(weight0);
-      Serial.print(", ");
-      float weight1 = LoadCell_1.getData(); 
-      float weight2 = LoadCell_2.getData(); 
-      Serial.print(weight1);
-      Serial.print(", ");
-      Serial.println(weight2);
+    float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
+    float weight0 = LoadCell_0.getData(); 
+    float weight1 = LoadCell_1.getData(); 
+    float weight2 = LoadCell_2.getData(); 
+    updateOLED(totalTimeinSeconds, weight0,weight1,weight2);
 
       if (redLEDActive) {
         digitalWrite(greenPin, LOW);  // Turn off green LED
@@ -238,7 +200,7 @@ void loop() {
         // Check if the blue LED is not active (i.e., green LED should remain on)
         if (!blueLEDActive) {
           if (weight0 <= threshold) {
-            digitalWrite(bluePin, HIGH);  // Turn on blue LED
+            // digitalWrite(bluePin, HIGH);  // Turn on blue LED
             blueLEDStartTime = millis();  // Record the start time
             blueLEDActive = true;  // Set the flag to true to track the blue LED timing
             digitalWrite(greenPin, LOW);  // Turn off green LED when blue is activated
@@ -326,3 +288,38 @@ void loop() {
     }
   }
 } 
+
+
+
+
+void updateOLED(float totalTimeinSeconds, float weight0,float weight1,float weight2) { // Display elapsed time
+
+  Serial.print(totalTimeinSeconds, 3);
+  Serial.print(", ");
+  displayWeight(weight0);
+  Serial.print(weight0);
+  Serial.print(", ");
+  Serial.print(weight1);
+  Serial.print(", ");
+  Serial.println(weight2);
+
+}
+
+// Function to update OLED with weight and current time
+void displayWeight(float weight) {
+  display.clearDisplay(); // Clears display
+  display.setTextColor(WHITE); // Text color is white
+
+  // Weight title display
+  display.setTextSize(1); 
+  display.setCursor(0, 10); // Text will be drawn starting 10 pixels down from the top and at the far-left edge
+  display.println("Weight:");
+  
+  // Weight display
+  display.setTextSize(2); 
+  display.setCursor(0, 30); // Text will be drawn starting 30 pixels down from the top and at the far-left edge
+  display.print(weight, 2); // Print weight variable with 4 decimal places
+  display.print(" g"); // Display grams (g) unit after weight variable
+
+  display.display(); // Updates screen with new content
+}
