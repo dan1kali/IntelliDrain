@@ -14,7 +14,7 @@ const int WEIGHTSCALE1_SCK_PIN = 8; // Weight Scale 1 SCK
 const int WEIGHTSCALE1_DOUT_PIN = 7; // Weight Scale 1 DOUT
 const int WEIGHTSCALE2_SCK_PIN = 10; // Weight Scale 2 SCK
 const int WEIGHTSCALE2_DOUT_PIN = 9; // Weight Scale 2 DOUT
-const byte redPin = 6, bluePin = 5, greenPin = 4, whitePin = 3;  // Pins for LEDs
+const byte redPin = 6, orangePin = 5, greenPin = 4, whitePin = 3;  // Pins for LEDs
 const byte buttonPin = 2;  // Pin for button
 const int command_out_pin = 30; //output to flushing Arduino/Users/macbook/Desktop/Arduino/DetectorSimplified_autopump/DetectorSimplified_autopump.ino
 
@@ -40,22 +40,22 @@ unsigned long startMillis; // To store the start time
 const int updateInterval = 954; //How often data is collected in milliseconds *********************************************
 
 ///// LOGIC AND LED CONTROL VARIABLES /////
-unsigned long blueLEDStartTime = 0;  // To track when blue LED is turned on
-const long blueLEDTotalDuration = 10000;  // Total blue LED duration (10 seconds)
-const long blueLEDOnDuration = 5000;  // Blue LED stays on for the first 5 seconds
-const long blueLEDFlashDuration = 500;  // Flash interval (500ms)
-bool blueLEDActive = false;  // Flag to check if blue LED is active
+unsigned long orangeLEDStartTime = 0;  // To track when orange LED is turned on
+const long orangeLEDTotalDuration = 10000;  // Total orange LED duration (10 seconds)
+const long orangeLEDOnDuration = 5000;  // orange LED stays on for the first 5 seconds
+const long orangeLEDFlashDuration = 500;  // Flash interval (500ms)
+bool orangeLEDActive = false;  // Flag to check if orange LED is active
 bool redLEDActive = false;  // Flag to check if red LED is active
-int blueLEDOffCount = 0;  // Counter for how many times the blue LED has been turned off
+int orangeLEDOffCount = 0;  // Counter for how many times the orange LED has been turned off
 
 ///// THRESHOLD VARIABLE /////
 float threshold = 0.0;  // Default threshold value
 bool thresholdPromptDisplayed = false;  // Flag to check if the prompt has been displayed
 
-///// BLUE LIGHT FLASHING /////
+///// orange LIGHT FLASHING /////
 unsigned long flashInterval = 500;  // Flash interval in milliseconds
 unsigned long lastFlashTime = 0;    // Store the time of the last flash
-bool blueLEDState = false;          // Track whether blue LED is on or off
+bool orangeLEDState = false;          // Track whether orange LED is on or off
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -121,15 +121,15 @@ void setup() {
   ///// LED PIN INITIALIZATION /////
   pinMode(command_out_pin, OUTPUT);
   pinMode(redPin, OUTPUT);
-  pinMode(bluePin, OUTPUT);
+  pinMode(orangePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
-  pinMode(whitePin, OUTPUT);
+  //pinMode(whitePin, OUTPUT);
   pinMode(buttonPin, INPUT); // Configure button pin as input with internal pull-up resistor
   // Start with only white LED on during baseline calculation
-  digitalWrite(whitePin, HIGH);
-  digitalWrite(redPin, LOW);  
-  digitalWrite(bluePin, LOW);  
-  digitalWrite(greenPin, LOW);  
+  //digitalWrite(whitePin, HIGH);
+  digitalWrite(redPin, HIGH);  
+  digitalWrite(orangePin, HIGH);  
+  digitalWrite(greenPin, HIGH);  
   digitalWrite(command_out_pin, LOW);  
   Serial.println("System on!");
   
@@ -150,8 +150,8 @@ void setup() {
   threshold = -100;
 
   ///// LED CONTROL AFTER THRESHOLD SET ///// 
-  digitalWrite(whitePin, LOW);  // Turn off white LED
-  digitalWrite(greenPin, HIGH); // Turn on green LED to indicate threshold received
+  //digitalWrite(whitePin, LOW);  // Turn off white LED
+  digitalWrite(greenPin, LOW); // Turn on green LED to indicate threshold received
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -173,10 +173,10 @@ void loop() {
 
   // Check for button press to turn off red LED
   if (digitalRead(buttonPin) == HIGH) {  // Button is pressed (assuming button is connected to ground)
-    digitalWrite(redPin, LOW);  // Turn off red LED
+    digitalWrite(redPin, HIGH);  // Turn off red LED
     redLEDActive = false;  // Reset the red LED active flag
-    digitalWrite(greenPin, HIGH);  // Reactivate green LED
-    blueLEDOffCount = 0;  // Reset the blue LED off counter
+    digitalWrite(greenPin, LOW);  // Reactivate green LED
+    orangeLEDOffCount = 0;  // Reset the orange LED off counter
     Serial.println("Red LED turned off. Resume.");
     delay(200);  // Simple debounce delay
   }
@@ -188,63 +188,61 @@ void loop() {
     float weight0 = LoadCell_0.getData(); 
     float weight1 = LoadCell_1.getData(); 
     float weight2 = LoadCell_2.getData(); 
-    updateOLED(totalTimeinSeconds, weight0,weight1,weight2);
+    updateOLED(totalTimeinSeconds,weight0,weight1,weight2);
 
       if (redLEDActive) {
-        digitalWrite(greenPin, LOW);  // Turn off green LED
-        digitalWrite(bluePin, LOW);   // Turn off blue LED
+        digitalWrite(greenPin, HIGH);  // Turn off green LED
+        digitalWrite(orangePin, HIGH);   // Turn off orange LED
 
         } 
         
         else {
-        // Check if the blue LED is not active (i.e., green LED should remain on)
-        if (!blueLEDActive) {
+        // Check if the orange LED is not active (i.e., green LED should remain on)
+        if (!orangeLEDActive) {
           if (weight0 <= threshold) {
-            // digitalWrite(bluePin, HIGH);  // Turn on blue LED
-            blueLEDStartTime = millis();  // Record the start time
-            blueLEDActive = true;  // Set the flag to true to track the blue LED timing
-            digitalWrite(greenPin, LOW);  // Turn off green LED when blue is activated
-          
+            orangeLEDStartTime = millis();  // Record the start time
+            orangeLEDActive = true;  // Set the flag to true to track the orange LED timing
+            digitalWrite(greenPin, HIGH);  // Turn off green LED when orange is activated
           }
         }
       }
 
-      // Logic for handling blue LED and red LED
-      if (blueLEDActive) {
-        // Calculate elapsed time since blue LED was turned on
-        unsigned long elapsedTime = millis() - blueLEDStartTime;
+      // Logic for handling orange LED and red LED
+      if (orangeLEDActive) {
+        // Calculate elapsed time since orange LED was turned on
+        unsigned long elapsedTime = millis() - orangeLEDStartTime;
 
-        // First 5 seconds: Blue LED stays on
-        if (elapsedTime < blueLEDOnDuration) {
-          digitalWrite(bluePin, HIGH);  // Ensure the blue LED stays on
+        // First 5 seconds: orange LED stays on
+        if (elapsedTime < orangeLEDOnDuration) {
+          digitalWrite(orangePin, LOW);  // Ensure the orange LED stays on
           digitalWrite(command_out_pin, HIGH); // Send command to start flush pump
           Serial.println("command out pin high");
 
         }
-        // Last 5 seconds: Blue LED flashes
-        else if (elapsedTime >= blueLEDOnDuration && elapsedTime < blueLEDTotalDuration) {
-          // Flash blue LED every 500 milliseconds
+        // Last 5 seconds: orange LED flashes
+        else if (elapsedTime >= orangeLEDOnDuration && elapsedTime < orangeLEDTotalDuration) {
+          // Flash orange LED every 500 milliseconds
           if (millis() - lastFlashTime >= flashInterval) {
-            blueLEDState = !blueLEDState;  // Toggle LED state
-            digitalWrite(bluePin, blueLEDState ? HIGH : LOW);  // Apply the new state
+            orangeLEDState = !orangeLEDState;  // Toggle LED state
+            digitalWrite(orangePin, orangeLEDState ? LOW : HIGH);  // Apply the new state
             digitalWrite(command_out_pin, HIGH); // Send command to start flush pump
             Serial.println("command out pin high (flashing)");
             lastFlashTime = millis();  // Update the last flash time
           }
         }
 
-        // After 10 seconds, turn off the blue LED and restore green LED
-        if (elapsedTime >= blueLEDTotalDuration) {
-          digitalWrite(bluePin, LOW);  // Turn off blue LED
+        // After 10 seconds, turn off the orange LED and restore green LED
+        if (elapsedTime >= orangeLEDTotalDuration) {
+          digitalWrite(orangePin, HIGH);  // Turn off orange LED
           digitalWrite(command_out_pin, LOW); // Send command to start flush pump
           Serial.println("command out pin low");
-          blueLEDActive = false;  // Reset the flag
-          digitalWrite(greenPin, HIGH);  // Turn green LED back on after blue LED is off
-          blueLEDOffCount++;  // Increment the blue LED off counter
+          orangeLEDActive = false;  // Reset the flag
+          digitalWrite(greenPin, LOW);  // Turn green LED back on after orange LED is off
+          orangeLEDOffCount++;  // Increment the orange LED off counter
 
-          // After the blue LED has been turned off twice, activate the red LED
-          if (blueLEDOffCount >= 2 && !redLEDActive) {
-            digitalWrite(redPin, HIGH);  // Turn on red LED
+          // After the orange LED has been turned off twice, activate the red LED
+          if (orangeLEDOffCount >= 2 && !redLEDActive) {
+            digitalWrite(redPin, LOW);  // Turn on red LED
             redLEDActive = true;  // Set flag to track red LED status
             Serial.println("Red LED activated.");
           }
@@ -252,23 +250,23 @@ void loop() {
       }
 
       // ** New logic for green LED to stay off when any other light is on ** 
-      if (weight0 > threshold && !redLEDActive && !blueLEDActive) {
-        digitalWrite(greenPin, HIGH); // Turn on green LED only if no other LED is active
-        blueLEDOffCount = 0;  // Reset the blue LED off counter
+      if (weight0 > threshold && !redLEDActive && !orangeLEDActive) {
+        digitalWrite(greenPin, LOW); // Turn on green LED only if no other LED is active
+        orangeLEDOffCount = 0;  // Reset the orange LED off counter
       } else {
-        digitalWrite(greenPin, LOW); // Turn off green LED otherwise
+        digitalWrite(greenPin, HIGH); // Turn off green LED otherwise
       }
 
       newDataReady = 0;
       t = millis();
 
-
+    
     }
   }
 
   
 
-  // receive command from serial terminal, send 't' to initiate tare operation:
+  /* // receive command from serial terminal, send 't' to initiate tare operation:
   if (Serial.available() > 0) {
     char inByte = Serial.read();
     if (inByte == 't') {
@@ -286,10 +284,8 @@ void loop() {
         LoadCell_2.tareNoDelay();
       }
     }
-  }
-} 
-
-
+  } */
+}  
 
 
 void updateOLED(float totalTimeinSeconds, float weight0,float weight1,float weight2) { // Display elapsed time
