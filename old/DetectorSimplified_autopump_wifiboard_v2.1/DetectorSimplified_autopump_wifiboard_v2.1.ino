@@ -98,28 +98,31 @@ void setup() {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  movingAvg open(10);
+  movingAvg closed(10);
 
   // generate average for open flow //
-  movingAvg open(10);
-  open.begin();
-  for (int i = 1; i <= 10; i++) {
-    float wOpen = LoadCell_0.getData(); // take reading
-    Serial.println(wOpen); // DELETE LATER
-    open.reading(wOpen); // add to the array for moving average
-    delay(2000);
-  }
-  Serial.println("Pinch tubing firmly between patient and sensor");
-  delay(3000); // wait for 3 seconds to allow tube to be pinched
-  // generate average for interrupted flow //
+  if (LoadCell_0.update()) {  
+    
+    open.begin();
+    for (int i = 1; i <= 10; i++) {
+      float wOpen = LoadCell_0.getData(); // take reading
+      Serial.println(wOpen); // DELETE LATER
+      open.reading(wOpen); // add to the array for moving average
+      delay(1000);
+    }
+    Serial.println("Pinch tubing firmly between patient and sensor");
+    delay(1000); // wait for 3 seconds to allow tube to be pinched
 
-  movingAvg closed(10);
-  closed.begin();
-  for (int i=1; i <= 10; i++){
-    float weight_Closed = LoadCell_0.getData(); // take reading
-    Serial.println(weight_Closed); // DELETE LATER
-    closed.reading(weight_Closed); // add to the array for moving average
-    delay(2000);
+    closed.begin();
+    for (int i=1; i <= 10; i++){
+      float weight_Closed = LoadCell_0.getData(); // take reading
+      Serial.println(weight_Closed); // DELETE LATER
+      closed.reading(weight_Closed); // add to the array for moving average
+      delay(1000);
+    }
   }
+
   Serial.println("Release tubing");
   int openAverage = open.getAvg();
   Serial.print("Open average: ");

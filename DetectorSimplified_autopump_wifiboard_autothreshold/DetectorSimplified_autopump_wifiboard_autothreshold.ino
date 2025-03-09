@@ -1,6 +1,5 @@
 ///// LIBRARY INCLUSIONS /////
 #include <HX711_ADC.h> // Communicates with HX711 load cell amplifier module
-#include <movingAvg.h> // allows for calculation of a moving average signed integer value
 
 ///// PIN DEFINITIONS /////
 const int LOADCELL_SCK_PIN = 7; // Sensor serial clock
@@ -25,10 +24,20 @@ const long orangeLEDFlashDuration = 500;  // Flash interval (500ms)
 bool orangeLEDActive = false;  // Flag to check if orange LED is active
 bool redLEDActive = false;  // Flag to check if red LED is active
 int orangeLEDOffCount = 0;  // Counter for how many times the orange LED has been turned off
+bool baselineNeeded = 1; 
+
 
 ///// THRESHOLD VARIABLE /////
-float threshold = 0.0;  // Default threshold value
-bool thresholdPromptDisplayed = false;  // Flag to check if the prompt has been displayed
+float threshold = 0;  // Default threshold value
+
+float openthreshold = 0;  // Default threshold value
+float openthresholdsum = 0;  // Variable to store the sum of the readings
+float openrecording; // Variable to store individual readings
+
+float closedthreshold = 0;  // Default threshold value
+float closedthresholdsum = 0;  // Variable to store the sum of the readings
+float closedrecording; // Variable to store individual readings
+
 
 ///// orange LIGHT FLASHING /////
 unsigned long flashInterval = 500;  // Flash interval in milliseconds
@@ -56,19 +65,22 @@ void setup() {
   unsigned long stabilizingtime = 2000; // tare precision can be improved by adding a few seconds of stabilizing time
   boolean _tare = true; // tare operation will be performed
   byte loadcell_0_rdy = 0;  
-  while ((loadcell_0_rdy ) < 1) { 
-    if (!loadcell_0_rdy) loadcell_0_rdy = LoadCell_0.startMultiple(stabilizingtime, _tare);
-  } // Loop continuously attempts to stabilize and tare each load cell until they are all ready
-  // Checks whether the tare operation failed due to timing out. If a timeout is detected, an error message displays.
-  if (LoadCell_0.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 no.0 wiring and pin designations (occlusion sensor)"); }
+  LoadCell_0.start(stabilizingtime, _tare);
+  delay(2000);
+
 
   ///// CURRENT TIME /////
   startMillis = millis(); // Stores time, in milliseconds, since the Arduino was powered on or reset (current time) ****************************
 
-  ///// SET CALIBRATION VALUES /////
-  LoadCell_0.setCalFactor(calibrationValue_0); // user set calibration value for sensor (float)
-  Serial.println("Weight scales startup is complete");
+  if (LoadCell_0.getTareTimeoutFlag()) {
+    Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
+    while (1);
+  }
+  else {
+    LoadCell_0.setCalFactor(calibrationValue_0); // set calibration value (float)
+    Serial.println("Startup is complete");
+  }
+
 
   ///// LED PIN INITIALIZATION /////
   pinMode(command_out_pin, OUTPUT);
@@ -85,35 +97,52 @@ void setup() {
   digitalWrite(command_out_pin, LOW);  
   Serial.println("System on!");
   
-  ///// THRESHOLD CALCULATION /////
-  Serial.println("Calibrating for threshold...");
-  // generate average for open flow //
-  movingAvg open(10);
-  open.begin();
+  delay(3000); 
+  
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////// THRESHOLD CALCULATION ///////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  
+  Serial.println("Starting auto-threshold calculation");
+
   for (int i = 1; i <= 10; i++) {
-    int wOpen = LoadCell_0.getData(); // take reading
-    open.reading(wOpen); // add to the array for moving average
-    delay(200);
+    if (LoadCell_0.update()) {
+      openrecording = LoadCell_0.getData(); // Take reading
+      Serial.println(openrecording); // DELETE LATER
+      openthresholdsum += openrecording; // Add current reading to sum
+      delay(1000);
+    } 
   }
-  Serial.println("Pinch tubing firmly between patient and sensor");
-  delay(3000); // wait for 3 seconds to allow tube to be pinched
-  // generate average for interrupted flow //
-  movingAvg closed(10);
-  closed.begin();
-  for (int i=1; i <= 10; i++){
-    int wClosed = LoadCell_0.getData(); // take reading
-    closed.reading(wClosed); // add to the array for moving average
-    delay(200);
+  float openaverage = openthresholdsum / 10; // Calculate the average of the 10 readings
+  Serial.println("Open average value: " + String(openaverage));
+
+  Serial.println("Pinch tube");
+  delay(5000);
+
+  for (int i = 1; i <= 10; i++) {
+    if (LoadCell_0.update()) {
+      closedrecording = LoadCell_0.getData(); // Take reading
+      Serial.println(closedrecording); // DELETE LATER
+      closedthresholdsum += closedrecording; // Add current reading to sum
+      delay(1000);
+    } 
   }
-  Serial.println("Release tubing");
-  // threshold = -100;
-  int openAverage = open.getAvg();
-  int closedAverage = closed.getAvg();
-  threshold = openAverage + (0.5 * closedAverage); // threshold is halfway between open and closed states
-  Serial.print("Threshold value: ");
-  Serial.println(threshold);
+  float closedaverage = closedthresholdsum / 10; // Calculate the average of the 10 readings
+  Serial.println("Closed average value: " + String(closedaverage));
+
+  threshold = 0.5 * (openaverage + closedaverage);
+  Serial.println("Threshold average value: " + String(threshold));
+
+  //threshold = -100;
+
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   ///// LED CONTROL AFTER THRESHOLD SET ///// 
   digitalWrite(greenPin, LOW); // Turn on green LED to indicate threshold received
+  digitalWrite(orangePin, HIGH); // Turn off the other two LEDs
+  digitalWrite(redPin, HIGH);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -231,3 +260,4 @@ void updateSerial(float totalTimeinSeconds, float weight0) { // Display elapsed 
   Serial.println(weight0);
 
 }
+
