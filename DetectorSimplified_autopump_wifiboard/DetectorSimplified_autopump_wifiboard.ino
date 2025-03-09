@@ -1,5 +1,6 @@
 ///// LIBRARY INCLUSIONS /////
 #include <HX711_ADC.h> // Communicates with HX711 load cell amplifier module
+#include <movingAvg.h> // allows for calculation of a moving average signed integer value
 
 ///// PIN DEFINITIONS /////
 const int LOADCELL_SCK_PIN = 7; // Sensor serial clock
@@ -41,6 +42,7 @@ bool orangeLEDState = false;          // Track whether orange LED is on or off
 
 void setup() {
   ///// SERIAL COMMUNICATION INITIALIZATION /////
+  delay(3000);
   Serial.begin(115200);
   Serial.println("Starting...");
 
@@ -53,8 +55,8 @@ void setup() {
   ///// TARE & STABILIZATION /////
   unsigned long stabilizingtime = 2000; // tare precision can be improved by adding a few seconds of stabilizing time
   boolean _tare = true; // tare operation will be performed
-  byte loadcell_0_rdy = 0;   byte loadcell_1_rdy = 0;  byte loadcell_2_rdy = 0; // 
-  while ((loadcell_0_rdy + loadcell_1_rdy + loadcell_2_rdy) < 3) { 
+  byte loadcell_0_rdy = 0;  
+  while ((loadcell_0_rdy ) < 1) { 
     if (!loadcell_0_rdy) loadcell_0_rdy = LoadCell_0.startMultiple(stabilizingtime, _tare);
   } // Loop continuously attempts to stabilize and tare each load cell until they are all ready
   // Checks whether the tare operation failed due to timing out. If a timeout is detected, an error message displays.
@@ -83,15 +85,33 @@ void setup() {
   digitalWrite(command_out_pin, LOW);  
   Serial.println("System on!");
   
-
-  ///////////////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////// NEED THRESHOLD CODE HERE/////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////////////
-
-  threshold = -100;
-
+  ///// THRESHOLD CALCULATION /////
+  Serial.println("Calibrating for threshold...");
+  // generate average for open flow //
+  movingAvg open(10);
+  open.begin();
+  for (int i = 1; i <= 10; i++) {
+    int wOpen = LoadCell_0.getData(); // take reading
+    open.reading(wOpen); // add to the array for moving average
+    delay(200);
+  }
+  Serial.println("Pinch tubing firmly between patient and sensor");
+  delay(3000); // wait for 3 seconds to allow tube to be pinched
+  // generate average for interrupted flow //
+  movingAvg closed(10);
+  closed.begin();
+  for (int i=1; i <= 10; i++){
+    int wClosed = LoadCell_0.getData(); // take reading
+    closed.reading(wClosed); // add to the array for moving average
+    delay(200);
+  }
+  Serial.println("Release tubing");
+  // threshold = -100;
+  int openAverage = open.getAvg();
+  int closedAverage = closed.getAvg();
+  threshold = openAverage + (0.5 * closedAverage); // threshold is halfway between open and closed states
+  Serial.print("Threshold value: ");
+  Serial.println(threshold);
   ///// LED CONTROL AFTER THRESHOLD SET ///// 
   digitalWrite(greenPin, LOW); // Turn on green LED to indicate threshold received
 }
