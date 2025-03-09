@@ -1,0 +1,233 @@
+///// LIBRARY INCLUSIONS /////
+#include <HX711_ADC.h> // Communicates with HX711 load cell amplifier module
+#include <movingAvg.h> // allows for calculation of a moving average signed integer value
+
+///// PIN DEFINITIONS /////
+const int LOADCELL_SCK_PIN = 7; // Sensor serial clock
+const int LOADCELL_DOUT_PIN = 6; // Sensor load cell data
+const byte redPin = 0, orangePin = 1, greenPin = 2;  // Pins for LEDs
+const byte buttonPin = 3;  // Pin for button
+const int command_out_pin = 4; //output to flushing Arduino/Users/macbook/Desktop/Arduino/DetectorSimplified_autopump/DetectorSimplified_autopump.ino
+
+///// LOAD CELL SETUP /////
+HX711_ADC LoadCell_0(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN); // Sensor Load Cell
+
+///// TIME VARIABLES /////
+unsigned long t = 0;
+unsigned long startMillis; // To store the start time
+const int updateInterval = 954; //How often data is collected in milliseconds *********************************************
+
+///// LOGIC AND LED CONTROL VARIABLES /////
+unsigned long orangeLEDStartTime = 0;  // To track when orange LED is turned on
+const long orangeLEDTotalDuration = 10000;  // Total orange LED duration (10 seconds)
+const long orangeLEDOnDuration = 5000;  // orange LED stays on for the first 5 seconds
+const long orangeLEDFlashDuration = 500;  // Flash interval (500ms)
+bool orangeLEDActive = false;  // Flag to check if orange LED is active
+bool redLEDActive = false;  // Flag to check if red LED is active
+int orangeLEDOffCount = 0;  // Counter for how many times the orange LED has been turned off
+
+///// THRESHOLD VARIABLE /////
+float threshold = 0.0;  // Default threshold value
+bool thresholdPromptDisplayed = false;  // Flag to check if the prompt has been displayed
+
+///// orange LIGHT FLASHING /////
+unsigned long flashInterval = 500;  // Flash interval in milliseconds
+unsigned long lastFlashTime = 0;    // Store the time of the last flash
+bool orangeLEDState = false;          // Track whether orange LED is on or off
+
+
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////// SETUP ///////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+
+void setup() {
+  ///// SERIAL COMMUNICATION INITIALIZATION /////
+  delay(3000);
+  Serial.begin(115200);
+  Serial.println("Starting...");
+
+  ///// CALIBRATION VALUES /////
+  float calibrationValue_0 = -286.04; // Calibration value for sensor load cell
+
+  ///// LOAD CELL INITIALIZATION /////
+  LoadCell_0.begin();
+
+  ///// TARE & STABILIZATION /////
+  unsigned long stabilizingtime = 2000; // tare precision can be improved by adding a few seconds of stabilizing time
+  boolean _tare = true; // tare operation will be performed
+  byte loadcell_0_rdy = 0;  
+  while ((loadcell_0_rdy ) < 1) { 
+    if (!loadcell_0_rdy) loadcell_0_rdy = LoadCell_0.startMultiple(stabilizingtime, _tare);
+  } // Loop continuously attempts to stabilize and tare each load cell until they are all ready
+  // Checks whether the tare operation failed due to timing out. If a timeout is detected, an error message displays.
+  if (LoadCell_0.getTareTimeoutFlag()) {
+    Serial.println("Timeout, check MCU>HX711 no.0 wiring and pin designations (occlusion sensor)"); }
+
+  ///// CURRENT TIME /////
+  startMillis = millis(); // Stores time, in milliseconds, since the Arduino was powered on or reset (current time) ****************************
+
+  ///// SET CALIBRATION VALUES /////
+  LoadCell_0.setCalFactor(calibrationValue_0); // user set calibration value for sensor (float)
+  Serial.println("Weight scales startup is complete");
+
+  ///// LED PIN INITIALIZATION /////
+  pinMode(command_out_pin, OUTPUT);
+  pinMode(redPin, OUTPUT);
+  pinMode(orangePin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  //pinMode(whitePin, OUTPUT);
+  pinMode(buttonPin, INPUT); // Configure button pin as input with internal pull-up resistor
+  // Start with only white LED on during baseline calculation
+  //digitalWrite(whitePin, HIGH);
+  digitalWrite(redPin, HIGH);  
+  digitalWrite(orangePin, HIGH);  
+  digitalWrite(greenPin, HIGH);  
+  digitalWrite(command_out_pin, LOW);  
+  Serial.println("System on!");
+  
+  ///// THRESHOLD CALCULATION /////
+  Serial.println("Calibrating for threshold...");
+  // generate average for open flow //
+  movingAvg open(10);
+  open.begin();
+  for (int i = 1; i <= 10; i++) {
+    int wOpen = LoadCell_0.getData(); // take reading
+    open.reading(wOpen); // add to the array for moving average
+    delay(200);
+  }
+  Serial.println("Pinch tubing firmly between patient and sensor");
+  delay(3000); // wait for 3 seconds to allow tube to be pinched
+  // generate average for interrupted flow //
+  movingAvg closed(10);
+  closed.begin();
+  for (int i=1; i <= 10; i++){
+    int wClosed = LoadCell_0.getData(); // take reading
+    closed.reading(wClosed); // add to the array for moving average
+    delay(200);
+  }
+  Serial.println("Release tubing");
+  // threshold = -100;
+  int openAverage = open.getAvg();
+  int closedAverage = closed.getAvg();
+  threshold = openAverage + (0.5 * closedAverage); // threshold is halfway between open and closed states
+  Serial.print("Threshold value: ");
+  Serial.println(threshold);
+  ///// LED CONTROL AFTER THRESHOLD SET ///// 
+  digitalWrite(greenPin, LOW); // Turn on green LED to indicate threshold received
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////// LOOP ///////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+
+void loop() {
+  ///// CURRENT TIME ///// 
+  unsigned long currentMillis = millis();
+  
+  static boolean newDataReady = 0; 
+
+  ///// DISPLAY CURRENT LOAD CELL DATA ///// 
+  if (!redLEDActive) {  // Only update load cell readings if the red LED is not active
+    if (LoadCell_0.update()) newDataReady = true;
+  }
+
+  // Check for button press to turn off red LED
+  if (digitalRead(buttonPin) == HIGH) {  // Button is pressed (assuming button is connected to ground)
+    digitalWrite(redPin, HIGH);  // Turn off red LED
+    redLEDActive = false;  // Reset the red LED active flag
+    digitalWrite(greenPin, LOW);  // Reactivate green LED
+    orangeLEDOffCount = 0;  // Reset the orange LED off counter
+    Serial.println("Red LED turned off. Resume.");
+    delay(200);  // Simple debounce delay
+  }
+
+  if (newDataReady) {
+    if (millis() > t + updateInterval) {
+
+    float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
+    float weight0 = LoadCell_0.getData(); 
+    updateSerial(totalTimeinSeconds,weight0);
+
+      if (redLEDActive) {
+        digitalWrite(greenPin, HIGH);  // Turn off green LED
+        digitalWrite(orangePin, HIGH);   // Turn off orange LED
+
+        } 
+        
+        else {
+        // Check if the orange LED is not active (i.e., green LED should remain on)
+        if (!orangeLEDActive) {
+          if (weight0 <= threshold) {
+            orangeLEDStartTime = millis();  // Record the start time
+            orangeLEDActive = true;  // Set the flag to true to track the orange LED timing
+            digitalWrite(greenPin, HIGH);  // Turn off green LED when orange is activated
+          }
+        }
+      }
+
+      // Logic for handling orange LED and red LED
+      if (orangeLEDActive) {
+        // Calculate elapsed time since orange LED was turned on
+        unsigned long elapsedTime = millis() - orangeLEDStartTime;
+
+        // First 5 seconds: orange LED stays on
+        if (elapsedTime < orangeLEDOnDuration) {
+          digitalWrite(orangePin, LOW);  // Ensure the orange LED stays on
+          digitalWrite(command_out_pin, HIGH); // Send command to start flush pump
+          Serial.println("command out pin high");
+
+        }
+        // Last 5 seconds: orange LED flashes
+        else if (elapsedTime >= orangeLEDOnDuration && elapsedTime < orangeLEDTotalDuration) {
+          // Flash orange LED every 500 milliseconds
+          if (millis() - lastFlashTime >= flashInterval) {
+            orangeLEDState = !orangeLEDState;  // Toggle LED state
+            digitalWrite(orangePin, orangeLEDState ? LOW : HIGH);  // Apply the new state
+            digitalWrite(command_out_pin, HIGH); // Send command to start flush pump
+            Serial.println("command out pin high (flashing)");
+            lastFlashTime = millis();  // Update the last flash time
+          }
+        }
+
+        // After 10 seconds, turn off the orange LED and restore green LED
+        if (elapsedTime >= orangeLEDTotalDuration) {
+          digitalWrite(orangePin, HIGH);  // Turn off orange LED
+          digitalWrite(command_out_pin, LOW); // Send command to start flush pump
+          Serial.println("command out pin low");
+          orangeLEDActive = false;  // Reset the flag
+          digitalWrite(greenPin, LOW);  // Turn green LED back on after orange LED is off
+          orangeLEDOffCount++;  // Increment the orange LED off counter
+
+          // After the orange LED has been turned off twice, activate the red LED
+          if (orangeLEDOffCount >= 2 && !redLEDActive) {
+            digitalWrite(redPin, LOW);  // Turn on red LED
+            redLEDActive = true;  // Set flag to track red LED status
+            Serial.println("Red LED activated.");
+          }
+        }
+      }
+
+      // ** New logic for green LED to stay off when any other light is on ** 
+      if (weight0 > threshold && !redLEDActive && !orangeLEDActive) {
+        digitalWrite(greenPin, LOW); // Turn on green LED only if no other LED is active
+        orangeLEDOffCount = 0;  // Reset the orange LED off counter
+      } else {
+        digitalWrite(greenPin, HIGH); // Turn off green LED otherwise
+      }
+
+      newDataReady = 0;
+      t = millis();
+    
+    }
+  }
+
+}  
+
+
+void updateSerial(float totalTimeinSeconds, float weight0) { // Display elapsed time
+
+  Serial.print(totalTimeinSeconds, 3);
+  Serial.print(", ");
+  Serial.println(weight0);
+
+}
