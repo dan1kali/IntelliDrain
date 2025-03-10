@@ -320,7 +320,7 @@ void updateSerial(float totalTimeinSeconds, float weight0) { // Display elapsed 
   Serial.print(totalTimeinSeconds, 3);
   Serial.print(", ");
   Serial.println(weight0);
-  //Serial2.println(weight0);
+  //  Serial2.println(weight0); commented out the BLE code
 
 }
 
