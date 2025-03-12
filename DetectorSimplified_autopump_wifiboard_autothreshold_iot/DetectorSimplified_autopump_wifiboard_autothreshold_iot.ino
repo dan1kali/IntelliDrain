@@ -1,5 +1,24 @@
+/* Comment this out to disable prints and save space */
+#define BLYNK_PRINT Serial
+
+/* Fill in information from Blynk Device Info here */
+#define BLYNK_TEMPLATE_ID           "TMPL2GH6q6rHl"
+#define BLYNK_TEMPLATE_NAME         "Quickstart Template"
+#define BLYNK_AUTH_TOKEN            "26WSWh6PdoD3rjZ6v-Y5cWXNVDI9qqN1"
+
+#include <SPI.h>
+#include <WiFiNINA.h>
+#include <BlynkSimpleWiFiNINA.h>
+
+
 ///// LIBRARY INCLUSIONS /////
 #include <HX711_ADC.h> // Communicates with HX711 load cell amplifier module
+
+
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "Rice Visitor";
+char pass[] = "";
 
 ///// PIN DEFINITIONS /////
 const int LOADCELL_SCK_PIN = 7; // Sensor serial clock
@@ -53,9 +72,11 @@ bool orangeLEDState = false;          // Track whether orange LED is on or off
 void setup() {
   ///// SERIAL COMMUNICATION INITIALIZATION /////
   delay(3000);
-  Serial.begin(115200);
-  Serial2.begin(9600);
+  Serial.begin(9600);
   Serial.println("Starting...");
+
+
+  Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
 
   ///// CALIBRATION VALUES /////
   float calibrationValue_0 = -286.04; // Calibration value for sensor load cell
@@ -151,6 +172,8 @@ void setup() {
 
 void loop() {
 
+  Blynk.run();
+
   ///// CURRENT TIME ///// 
   unsigned long currentMillis = millis();
   
@@ -164,14 +187,14 @@ void loop() {
 
 
   // Check for button press to turn off red LED
-  if (digitalRead(buttonPin) == HIGH) {  // Button is pressed (assuming button is connected to ground)
+  /* if (digitalRead(buttonPin) == HIGH) {  // Button is pressed (assuming button is connected to ground)
     digitalWrite(redPin, HIGH);  // Turn off red LED
     redLEDActive = false;  // Reset the red LED active flag
     digitalWrite(greenPin, LOW);  // Reactivate green LED
     orangeLEDOffCount = 0;  // Reset the orange LED off counter
     Serial.println("Red LED turned off. Resume.");
     delay(200);  // Simple debounce delay
-  }
+  } */
 
   if (newDataReady) {
     if (millis() > t + updateInterval) {
@@ -264,7 +287,11 @@ void updateSerial(float totalTimeinSeconds, float weight0) { // Display elapsed 
   Serial.print(totalTimeinSeconds, 3);
   Serial.print(", ");
   Serial.println(weight0);
-  Serial2.println(weight0);
+  tParam param;
+  double int_totalTimeinSeconds = (double)totalTimeinSeconds;
+  double int_weight0 = (double)weight0;
+  Blynk.virtualWrite(V1, int_weight0);
+  Blynk.virtualWrite(V2, int_totalTimeinSeconds);
 
 }
 

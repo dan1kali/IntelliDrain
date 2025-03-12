@@ -4,11 +4,11 @@
 ///// PIN DEFINITIONS /////
 const int LOADCELL_SCK_PIN = 7; // Sensor serial clock
 const int LOADCELL_DOUT_PIN = 6; // Sensor load cell data
-const byte redPin = 5, orangePin = 4, greenPin = 3;  // Pins for LEDs
-const byte buttonPin = 1;  // Pin for button
-const int command_out_pin = 2; //output to flushing
-const int bt_rx_pin = 13; // Connect to TXD pin on HM-10 module
-const int bt_tx_pin = 14; // Connect to RXD pin on HM-10 module
+const byte redPin = 0, orangePin = 1, greenPin = 2;  // Pins for LEDs
+const byte buttonPin = 3;  // Pin for button
+const int command_out_pin = 8; //output to flushing
+//const int bt_rx_pin = 13; // Connect to TXD pin on HM-10 module
+//const int bt_tx_pin = 14; // Connect to RXD pin on HM-10 module
 
 ///// LOAD CELL SETUP /////
 HX711_ADC LoadCell_0(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN); // Sensor Load Cell
@@ -53,9 +53,9 @@ bool orangeLEDState = false;          // Track whether orange LED is on or off
 void setup() {
   ///// SERIAL COMMUNICATION INITIALIZATION /////
   delay(3000);
-  Serial.begin(115200);
-  Serial2.begin(9600);
-  Serial.println("Starting...");
+  //Serial.begin(115200);
+  Serial1.begin(9600);
+  //Serial.println("Starting...");
 
   ///// CALIBRATION VALUES /////
   float calibrationValue_0 = -286.04; // Calibration value for sensor load cell
@@ -75,12 +75,12 @@ void setup() {
   startMillis = millis(); // Stores time, in milliseconds, since the Arduino was powered on or reset (current time) ****************************
 
   if (LoadCell_0.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
+    //Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
     while (1);
   }
   else {
     LoadCell_0.setCalFactor(calibrationValue_0); // set calibration value (float)
-    Serial.println("Startup is complete");
+    //Serial.println("Startup is complete");
   }
 
 
@@ -92,9 +92,9 @@ void setup() {
   pinMode(buttonPin, INPUT); // Configure button pin as input with internal pull-up resistor
   digitalWrite(redPin, HIGH);  
   digitalWrite(orangePin, HIGH);  
-  digitalWrite(greenPin, LOW);  /// make it start green
+  digitalWrite(greenPin, HIGH);  
   digitalWrite(command_out_pin, LOW);  
-  Serial.println("System on!");
+  //Serial.println("System on!");
   
   delay(3000); 
   
@@ -103,37 +103,37 @@ void setup() {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   
-  Serial.println("Starting auto-threshold calculation");
+  //Serial.println("Starting auto-threshold calculation");
 
-  for (int i = 1; i <= 10; i++) {
+  /* for (int i = 1; i <= 10; i++) {
     if (LoadCell_0.update()) {
       openrecording = LoadCell_0.getData(); // Take reading
-      Serial.println(openrecording); // DELETE LATER
+      //Serial.println(openrecording); // DELETE LATER
       openthresholdsum += openrecording; // Add current reading to sum
       delay(1000);
     } 
   }
   float openaverage = openthresholdsum / 10; // Calculate the average of the 10 readings
-  Serial.println("Open average value: " + String(openaverage));
+  //Serial.println("Open average value: " + String(openaverage));
 
-  Serial.println("Pinch tube");
+  //Serial.println("Pinch tube");
   delay(5000);
 
   for (int i = 1; i <= 10; i++) {
     if (LoadCell_0.update()) {
       closedrecording = LoadCell_0.getData(); // Take reading
-      Serial.println(closedrecording); // DELETE LATER
+      //Serial.println(closedrecording); // DELETE LATER
       closedthresholdsum += closedrecording; // Add current reading to sum
       delay(1000);
     } 
   }
   float closedaverage = closedthresholdsum / 10; // Calculate the average of the 10 readings
-  Serial.println("Closed average value: " + String(closedaverage));
+  //Serial.println("Closed average value: " + String(closedaverage));
 
-  threshold = 0.5 * (openaverage + closedaverage);
-  Serial.println("Threshold average value: " + String(threshold));
+  threshold = 0.5 * (openaverage + closedaverage); */
+  //Serial.println("Threshold average value: " + String(threshold));
 
-  //threshold = -100;
+  threshold = -100;
 
  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,7 +169,7 @@ void loop() {
     redLEDActive = false;  // Reset the red LED active flag
     digitalWrite(greenPin, LOW);  // Reactivate green LED
     orangeLEDOffCount = 0;  // Reset the orange LED off counter
-    Serial.println("Red LED turned off. Resume.");
+    //Serial.println("Red LED turned off. Resume.");
     delay(200);  // Simple debounce delay
   }
 
@@ -206,7 +206,7 @@ void loop() {
         if (elapsedTime < orangeLEDOnDuration) {
           digitalWrite(orangePin, LOW);  // Ensure the orange LED stays on
           digitalWrite(command_out_pin, HIGH); // Send command to start flush pump
-          Serial.println("command out pin high");
+          //Serial.println("command out pin high");
 
         }
         // Last 5 seconds: orange LED flashes
@@ -216,7 +216,7 @@ void loop() {
             orangeLEDState = !orangeLEDState;  // Toggle LED state
             digitalWrite(orangePin, orangeLEDState ? LOW : HIGH);  // Apply the new state
             digitalWrite(command_out_pin, HIGH); // Send command to start flush pump
-            Serial.println("command out pin high (flashing)");
+            //Serial.println("command out pin high (flashing)");
             lastFlashTime = millis();  // Update the last flash time
           }
         }
@@ -225,7 +225,7 @@ void loop() {
         if (elapsedTime >= orangeLEDTotalDuration) {
           digitalWrite(orangePin, HIGH);  // Turn off orange LED
           digitalWrite(command_out_pin, LOW); // Send command to start flush pump
-          Serial.println("command out pin low");
+          //Serial.println("command out pin low");
           orangeLEDActive = false;  // Reset the flag
           digitalWrite(greenPin, LOW);  // Turn green LED back on after orange LED is off
           orangeLEDOffCount++;  // Increment the orange LED off counter
@@ -234,7 +234,7 @@ void loop() {
           if (orangeLEDOffCount >= 2 && !redLEDActive) {
             digitalWrite(redPin, LOW);  // Turn on red LED
             redLEDActive = true;  // Set flag to track red LED status
-            Serial.println("Red LED activated.");
+            //Serial.println("Red LED activated.");
           }
         }
       }
@@ -261,10 +261,11 @@ void loop() {
 
 void updateSerial(float totalTimeinSeconds, float weight0) { // Display elapsed time
 
-  Serial.print(totalTimeinSeconds, 3);
-  Serial.print(", ");
-  Serial.println(weight0);
-  Serial2.println(weight0);
+  //Serial.print(totalTimeinSeconds, 3);
+  //Serial.print(", ");
+
+  int int_weight0 = (int)weight0;
+  Serial1.println(int_weight0);
 
 }
 
