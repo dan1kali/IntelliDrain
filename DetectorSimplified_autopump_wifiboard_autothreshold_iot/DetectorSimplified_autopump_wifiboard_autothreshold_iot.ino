@@ -1,5 +1,5 @@
 /* Comment this out to disable prints and save space */
-#define BLYNK_PRINT Serial
+//#define BLYNK_PRINT Serial
 
 /* Fill in information from Blynk Device Info here */
 #define BLYNK_TEMPLATE_ID           "TMPL2GH6q6rHl"
@@ -63,6 +63,7 @@ float closedrecording; // Variable to store individual readings
 unsigned long flashInterval = 500;  // Flash interval in milliseconds
 unsigned long lastFlashTime = 0;    // Store the time of the last flash
 bool orangeLEDState = false;          // Track whether orange LED is on or off
+bool greenLEDState = false;          // Track whether orange LED is on or off
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -122,9 +123,10 @@ void setup() {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////// THRESHOLD CALCULATION ///////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   
   Serial.println("Starting auto-threshold calculation");
+
+  unsigned long lastGreenLEDFlashTime = 0;    // Store the time of the last flash
 
   for (int i = 1; i <= 10; i++) {
     if (LoadCell_0.update()) {
@@ -133,6 +135,13 @@ void setup() {
       openthresholdsum += openrecording; // Add current reading to sum
       delay(1000);
     } 
+    
+    /* if (millis() - lastGreenLEDFlashTime >= 500) {
+      greenLEDState = !greenLEDState;  // Toggle the green LED state
+      digitalWrite(greenPin, greenLEDState ? LOW : HIGH);  // Turn LED on or off based on the state
+      lastGreenLEDFlashTime = millis();  // Update the last flash time
+    } */
+
   }
   float openaverage = openthresholdsum / 10; // Calculate the average of the 10 readings
   Serial.println("Open average value: " + String(openaverage));
@@ -147,6 +156,13 @@ void setup() {
       closedthresholdsum += closedrecording; // Add current reading to sum
       delay(1000);
     } 
+
+    /* if (millis() - lastGreenLEDFlashTime >= 500) {
+      greenLEDState = !greenLEDState;  // Toggle the green LED state
+      digitalWrite(greenPin, greenLEDState ? LOW : HIGH);  // Turn LED on or off based on the state
+      lastGreenLEDFlashTime = millis();  // Update the last flash time
+    } */
+
   }
   float closedaverage = closedthresholdsum / 10; // Calculate the average of the 10 readings
   Serial.println("Closed average value: " + String(closedaverage));
@@ -214,10 +230,12 @@ void loop() {
         else {
         // Check if the orange LED is not active (i.e., green LED should remain on)
         if (!orangeLEDActive) {
-          if (weight0 <= threshold) {
-            orangeLEDStartTime = millis();  // Record the start time
-            orangeLEDActive = true;  // Set the flag to true to track the orange LED timing
-            digitalWrite(greenPin, HIGH);  // Turn off green LED when orange is activated
+          if (totalTimeinSeconds>=42) {
+            if (weight0 <= threshold) {
+              orangeLEDStartTime = millis();  // Record the start time
+              orangeLEDActive = true;  // Set the flag to true to track the orange LED timing
+              digitalWrite(greenPin, HIGH);  // Turn off green LED when orange is activated
+            }
           }
         }
       }
