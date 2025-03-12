@@ -89,7 +89,7 @@ void setup() {
   pinMode(redPin, OUTPUT);
   pinMode(orangePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
-  pinMode(buttonPin, INPUT); // Configure button pin as input with internal pull-up resistor
+  pinMode(buttonPin, INPUT_PULLUP); // Configure button pin as input with internal pull-up resistor
   digitalWrite(redPin, HIGH);  
   digitalWrite(orangePin, HIGH);  
   digitalWrite(greenPin, LOW);  /// make it start green
@@ -132,6 +132,7 @@ void setup() {
 
   threshold = 0.5 * (openaverage + closedaverage);
   Serial.println("Threshold average value: " + String(threshold));
+  delay(5000);
 
   //threshold = -100;
 
@@ -164,7 +165,7 @@ void loop() {
 
 
   // Check for button press to turn off red LED
-  if (digitalRead(buttonPin) == HIGH) {  // Button is pressed (assuming button is connected to ground)
+  if (digitalRead(buttonPin) == LOW) {  // Button is pressed (assuming button is connected to ground)
     digitalWrite(redPin, HIGH);  // Turn off red LED
     redLEDActive = false;  // Reset the red LED active flag
     digitalWrite(greenPin, LOW);  // Reactivate green LED
