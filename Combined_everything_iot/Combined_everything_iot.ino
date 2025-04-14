@@ -583,8 +583,8 @@ int handle_flush_cycle() {
 // working version, no one knows why
 int handle_flush_cycle() { 
   unsigned long current_time = millis();
-  //Serial.print("Time elapsed since last flush: ");
-  //Serial.println(current_time - flush_timer_start);
+  Serial.print("Time elapsed since last flush: ");
+  Serial.println(current_time - flush_timer_start);
   
   if (current_time - flush_timer_start >= flush_frequency * 60.0 * 1000.0) {   
     Serial.println("Starting periodic flush cycle...");
