@@ -53,9 +53,9 @@ int voltage_A_pin = A0;
 ////////////////////////////////////////////////////////////
 
 ///// PIN DEFINITIONS /////
-const int LOADCELL_SCK_PIN = 42; // Sensor serial clock
-const int LOADCELL_DOUT_PIN = 40; // Sensor load cell data
-const byte redPin = 16, orangePin = 15, greenPin = 14;  // Pins for LEDs
+const int LOADCELL_SCK_PIN = 12; // Sensor serial clock
+const int LOADCELL_DOUT_PIN = 8; // Sensor load cell data
+const byte redPin = 0, orangePin = 1, greenPin = 2;  // Pins for LEDs
 const byte buttonPin = 6;  // Pin for button
 
 // Your WiFi credentials, set password to "" for open networks.
@@ -79,6 +79,7 @@ bool orangeLEDActive = false;  // Flag to check if orange LED is active
 bool redLEDActive = false;  // Flag to check if red LED is active
 int orangeLEDOffCount = 0;  // Counter for how many times the orange LED has been turned off
 bool baselineNeeded = 1; 
+const long startDelayTime = 36000;
 
 ///// THRESHOLD VARIABLE /////
 float threshold = 0;  // Default threshold value
@@ -132,7 +133,7 @@ void setup() {
   Serial.println("Pump Control System Ready");
 
   // Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
-  Serial.println("IoT System Ready");
+  //Serial.println("IoT System Ready");
 
   ///// CALIBRATION VALUES /////
   float calibrationValue_0 = -286.04; // Calibration value for sensor load cell
@@ -252,14 +253,16 @@ void loop() {
   }
 
   // Check for button press to turn off red LED
-  if (digitalRead(buttonPin) == LOW) {  // Button is pressed (assuming button is connected to ground)
-    digitalWrite(redPin, HIGH);  // Turn off red LED
-    redLEDActive = false;  // Reset the red LED active flag
-    digitalWrite(greenPin, LOW);  // Reactivate green LED
-    orangeLEDOffCount = 0;  // Reset the orange LED off counter
-    // Serial.println("Pintout:" + string(digitalRead(buttonPin)));
-    Serial.println("Red LED turned off. Resume.");
-    delay(200);  // Simple debounce delay
+  if (redLEDActive) {  // Only update load cell readings if the red LED is not active
+    if (digitalRead(buttonPin) == LOW) {  // Button is pressed (assuming button is connected to ground)
+      digitalWrite(redPin, HIGH);  // Turn off red LED
+      redLEDActive = false;  // Reset the red LED active flag
+      digitalWrite(greenPin, LOW);  // Reactivate green LED
+      orangeLEDOffCount = 0;  // Reset the orange LED off counter
+      // Serial.println("Pintout:" + string(digitalRead(buttonPin)));
+      Serial.println("Red LED turned off. Resume.");
+      delay(200);  // Simple debounce delay
+    }
   }
 
   if (newDataReady) {
@@ -268,6 +271,10 @@ void loop() {
       float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
       float weight0 = LoadCell_0.getData(); 
       updateSerial(totalTimeinSeconds,weight0);
+
+
+
+
 
       if (redLEDActive) {
         digitalWrite(greenPin, HIGH);  // Turn off green LED
@@ -281,10 +288,15 @@ void loop() {
         
         // Check if the orange LED is not active (i.e., green LED should remain on)
         if (!orangeLEDActive) {
-          if (weight0 <= threshold) {
-            orangeLEDStartTime = millis();  // Record the start time
-            orangeLEDActive = true;  // Set the flag to true to track the orange LED timing
-            digitalWrite(greenPin, HIGH);  // Turn off green LED when orange is activated
+          Serial.println(currentMillis - startMillis);
+          if (currentMillis - startMillis >= startDelayTime) {
+
+            if (weight0 <= threshold) {
+              orangeLEDStartTime = millis();  // Record the start time
+              orangeLEDActive = true;  // Set the flag to true to track the orange LED timing
+              digitalWrite(greenPin, HIGH);  // Turn off green LED when orange is activated
+            }
+
           }
         }
       }
@@ -318,6 +330,13 @@ void loop() {
           orangeLEDOffCount++;  // Increment the orange LED off counter
 
           // After the orange LED has been turned off twice, activate the red LED
+            if (orangecounter == 4) {
+            digitalWrite(redPin, LOW);  // Turn on red LED
+            redLEDActive = true;  // Set flag to track red LED status
+            startAbscessSuction(); //new
+            stopSaline();//new
+            Serial.println("Red LED activated.");
+          }
         }
       }
 
@@ -583,8 +602,8 @@ int handle_flush_cycle() {
 // working version, no one knows why
 int handle_flush_cycle() { 
   unsigned long current_time = millis();
-  Serial.print("Time elapsed since last flush: ");
-  Serial.println(current_time - flush_timer_start);
+  //Serial.print("Time elapsed since last flush: ");
+  //Serial.println(current_time - flush_timer_start);
   
   if (current_time - flush_timer_start >= flush_frequency * 60.0 * 1000.0) {   
     Serial.println("Starting periodic flush cycle...");
