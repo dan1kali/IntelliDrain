@@ -1,7 +1,7 @@
 import serial
 import csv
 
-ser = serial.Serial('/dev/cu.usbmodem14201', 115200)
+ser = serial.Serial('/dev/cu.usbmodem14101', 115200)
 
 # Open a CSV file to log the data
 with open('/Users/macbook/Desktop/Arduino/serial_output.csv', 'w', newline='') as file:

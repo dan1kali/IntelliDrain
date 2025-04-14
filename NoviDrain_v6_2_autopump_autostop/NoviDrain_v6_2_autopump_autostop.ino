@@ -24,7 +24,7 @@ Developed by Linh Vu 1/21/19
 
 int saline_rpm = 220; //Saline pump rpm: scaled 0 -255
 int abscess_rpm = 170;   //Saline pump rpm: scaled 0 -255
-int flush_duration = 11; //Saline flush duration: seconds
+int flush_duration = 10; //Saline flush duration: seconds
 float flush_frequency = 10000; //Saline flush frequency: minutes
 bool bleyn = false; //true: use bluetooth app connection, false ignore bluetooth app
 bool verbosex = true;
@@ -36,6 +36,7 @@ int bt_RX = 2, bt_TX = 6;
 int pinPwrA = A2, pinPwrB = A3;
 int voltage_A_pin = A0;
 int command_in_pin = 13;
+int command_stop_pin = 1;
 
 //Tracking metrics
 float totalflushvol = 0.0, totalflushtime = 0.0;
@@ -46,10 +47,11 @@ unsigned long absess_flush_timer_limit = 0;
 unsigned long flush_timer_start = 0; //Flush performed when periodic flush is performed
 unsigned long flush_timer_limit = 0;
 unsigned long signalHighStartTime = 0; // Variable to store the start time
+unsigned long stopsignalHighStartTime = 0; // Variable to store the start time
 bool timer_enabled = true;
 
 // Flags and states
-bool clog_yn = false, flush_now = false;
+bool clog_yn = false, flush_now = false, stop_all_yn = false;
 int count = 0;
 bool RPwrstate = 0; //Assign variables
 bool LPwrstate = 0;
@@ -74,7 +76,7 @@ String getValue(String data, char separator, int index);
 
 void setup() {
   // Initialize serial communication
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
   // Initialize pump control pins
   pinMode(in1, OUTPUT);
@@ -87,6 +89,7 @@ void setup() {
   pinMode(pinPwrA, INPUT_PULLUP); //SPDT
   pinMode(pinPwrB, INPUT_PULLUP); //SPDT
   pinMode(command_in_pin, INPUT); //SPDT
+  pinMode(command_stop_pin, INPUT); //SPDT
   
 
   //Update pumps rpm
@@ -98,7 +101,7 @@ void setup() {
   if (bleyn){
     setup_ble(&ble);
   }
-  Serial.println("Pump Control System Ready");
+  //Serial.println("Pump Control System Ready");
 }
 
 ////////////////////////////////////////////////////////////
@@ -136,26 +139,49 @@ void loop() {
 
   delay(500);
 
-  int signal = digitalRead(command_in_pin);  // Read the signal from pin 13
-    Serial.print("command_in_pin is: ");
-    Serial.println(signal);
+  int flushsignal = digitalRead(command_in_pin);  // Read the signal from pin 13
+    //Serial.print("command_in_pin is: ");
+    //Serial.println(flushsignal);
 
-  if (signal == HIGH) {
+  if (flushsignal == HIGH) {
       if (signalHighStartTime == 0) {
         // Record the time when the signal first goes HIGH
         signalHighStartTime = millis();
       } else if (millis() - signalHighStartTime >= 20) {
         // Check if the signal has been HIGH for more than 50 ms
         clog_yn = true;
-        Serial.print("clog_yn is: ");
-        Serial.println(clog_yn);
+        //Serial.print("clog_yn is: ");
+        //Serial.println(clog_yn);
       }
     } else {
       // Reset the start time if the signal is not HIGH
       signalHighStartTime = 0;
       clog_yn = false;
-      Serial.print("clog_yn is: ");
-      Serial.println(clog_yn);
+      //Serial.print("clog_yn is: ");
+      //Serial.println(clog_yn);
+    }
+
+
+  int stopsignal = digitalRead(command_stop_pin);  // Read the signal from pin 13
+  //Serial.print("command_in_pin is: ");
+  //Serial.println(stopsignal);
+
+  if (stopsignal == HIGH) {
+      if (stopsignalHighStartTime == 0) {
+        // Record the time when the signal first goes HIGH
+        stopsignalHighStartTime = millis();
+      } else if (millis() - stopsignalHighStartTime >= 100) {
+        // Check if the signal has been HIGH for more than 100 ms
+        stop_all_yn = true;
+        //Serial.print("stop_all_yn is: ");
+        //Serial.println(stop_all_yn);
+      }
+    } else {
+      // Reset the start time if the signal is not HIGH
+      stopsignalHighStartTime = 0;
+      stop_all_yn = false;
+      //Serial.print("stop_all_yn is: ");
+      //Serial.println(stop_all_yn);
     }
 
 
@@ -234,49 +260,57 @@ int handle_toggle_switch(){
 
 void handle_pump_logic() {
 
-  ////////////////////////////////////////
-  // Normal operation (no clog, no flush)
-  if (!flush_now && !clog_yn) {
-    startAbscessSuction();
-    stopSaline();
+
+  if (!stopsignalHighStartTime) {
+  stopAbscess();
+  stopSaline();
   }
-
-  ////////////////////////////////////////
-  // Clogged operation (reverse flow and flush)
-  else if (clog_yn || flush_now) {
-
-   //Stop pumps for a 1/2 second
-   stopAbscess();
-   stopSaline();
-   //delay(500);    
-    
-    // Reverse pump and start saline propulsion for flushing
-    startAbscessReverse();
-    startSalinePropulsion();
-
-    // Initialize clog clear timer (abscess_flush_timer)
-    absess_flush_timer_start = millis();
-    absess_flush_timer_limit = flush_duration * 1000; // Wait for stabilization
-
-    // Serial.print("CLOG FLUSHING FOR: ");
-    // Serial.print(flush_duration);
-    // Serial.println(" seconds");
-    while (millis() - absess_flush_timer_start < absess_flush_timer_limit) {
-      //Serial.println("Reversing pump and flush to clear clog");
-    } 
-      // Flush completed
-      flush_now = false;
-      clog_yn = false;
-      totalflushtime += flush_duration; //Log flush duration
-      // Serial.println("CLOG FLUSHING COMPLETED!");
-
-      //RESET PERIODIC TIMER
-      setup_timer();
-
-      //Stop pumps for a 1/2 second
-      stopAbscess();
+  
+  else {
+    ////////////////////////////////////////
+    // Normal operation (no clog, no flush)
+    if (!flush_now && !clog_yn) {
+      startAbscessSuction();
       stopSaline();
-      //delay(500);     
+    }
+
+    ////////////////////////////////////////
+    // Clogged operation (reverse flow and flush)
+    else if (clog_yn || flush_now) {
+
+    //Stop pumps for a 1/2 second
+    stopAbscess();
+    stopSaline();
+    //delay(500);    
+      
+      // Reverse pump and start saline propulsion for flushing
+      startAbscessReverse();
+      startSalinePropulsion();
+
+      // Initialize clog clear timer (abscess_flush_timer)
+      absess_flush_timer_start = millis();
+      absess_flush_timer_limit = flush_duration * 1000; // Wait for stabilization
+
+      // Serial.print("CLOG FLUSHING FOR: ");
+      // Serial.print(flush_duration);
+      // Serial.println(" seconds");
+      while (millis() - absess_flush_timer_start < absess_flush_timer_limit) {
+        //Serial.println("Reversing pump and flush to clear clog");
+      } 
+        // Flush completed
+        flush_now = false;
+        clog_yn = false;
+        totalflushtime += flush_duration; //Log flush duration
+        // Serial.println("CLOG FLUSHING COMPLETED!");
+
+        //RESET PERIODIC TIMER
+        setup_timer();
+
+        //Stop pumps for a 1/2 second
+        stopAbscess();
+        stopSaline();
+        //delay(500);     
+    }
   }
 }
 

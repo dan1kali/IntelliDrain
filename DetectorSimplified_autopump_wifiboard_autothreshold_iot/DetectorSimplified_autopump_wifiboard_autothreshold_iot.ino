@@ -26,6 +26,7 @@ const int LOADCELL_DOUT_PIN = 6; // Sensor load cell data
 const byte redPin = 5, orangePin = 4, greenPin = 3;  // Pins for LEDs
 const byte buttonPin = 1;  // Pin for button
 const int command_out_pin = 2; //output to flushing
+const int command_stop_pin = 0; //output to flushing
 const int bt_rx_pin = 13; // Connect to TXD pin on HM-10 module
 const int bt_tx_pin = 14; // Connect to RXD pin on HM-10 module
 
@@ -39,7 +40,7 @@ const int updateInterval = 954; //How often data is collected in milliseconds **
 
 ///// LOGIC AND LED CONTROL VARIABLES /////
 unsigned long orangeLEDStartTime = 0;  // To track when orange LED is turned on
-const long orangeLEDTotalDuration = 10000;  // Total orange LED duration (10 seconds)
+const long orangeLEDTotalDuration = 9500;  // Total orange LED duration (10 seconds)
 const long orangeLEDOnDuration = 5000;  // orange LED stays on for the first 5 seconds
 const long orangeLEDFlashDuration = 500;  // Flash interval (500ms)
 bool orangeLEDActive = false;  // Flag to check if orange LED is active
@@ -108,6 +109,7 @@ void setup() {
 
   ///// LED PIN INITIALIZATION /////
   pinMode(command_out_pin, OUTPUT);
+  pinMode(command_stop_pin, OUTPUT);
   pinMode(redPin, OUTPUT);
   pinMode(orangePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
@@ -116,6 +118,7 @@ void setup() {
   digitalWrite(orangePin, HIGH);  
   digitalWrite(greenPin, LOW);  /// make it start green
   digitalWrite(command_out_pin, LOW);  
+  digitalWrite(command_stop_pin, LOW);  
   Serial.println("System on!");
   
   delay(3000); 
@@ -136,11 +139,11 @@ void setup() {
       delay(1000);
     } 
     
-    /* if (millis() - lastGreenLEDFlashTime >= 500) {
+    if (millis() - lastGreenLEDFlashTime >= 500) {
       greenLEDState = !greenLEDState;  // Toggle the green LED state
       digitalWrite(greenPin, greenLEDState ? LOW : HIGH);  // Turn LED on or off based on the state
       lastGreenLEDFlashTime = millis();  // Update the last flash time
-    } */
+    }
 
   }
   float openaverage = openthresholdsum / 10; // Calculate the average of the 10 readings
@@ -157,11 +160,11 @@ void setup() {
       delay(1000);
     } 
 
-    /* if (millis() - lastGreenLEDFlashTime >= 500) {
+    if (millis() - lastGreenLEDFlashTime >= 500) {
       greenLEDState = !greenLEDState;  // Toggle the green LED state
       digitalWrite(greenPin, greenLEDState ? LOW : HIGH);  // Turn LED on or off based on the state
       lastGreenLEDFlashTime = millis();  // Update the last flash time
-    } */
+    }
 
   }
   float closedaverage = closedthresholdsum / 10; // Calculate the average of the 10 readings
@@ -186,6 +189,7 @@ void setup() {
 ///////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////// LOOP ///////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
+int orangecounter = 0;
 
 void loop() {
 
@@ -224,10 +228,13 @@ void loop() {
       if (redLEDActive) {
         digitalWrite(greenPin, HIGH);  // Turn off green LED
         digitalWrite(orangePin, HIGH);   // Turn off orange LED
-
+        digitalWrite(command_stop_pin, HIGH);  /////////////////// new
         } 
         
         else {
+
+        digitalWrite(command_stop_pin, LOW); /////////////////////// new
+        
         // Check if the orange LED is not active (i.e., green LED should remain on)
         if (!orangeLEDActive) {
           if (totalTimeinSeconds>=42) {
@@ -267,6 +274,7 @@ void loop() {
         // After 10 seconds, turn off the orange LED and restore green LED
         if (elapsedTime >= orangeLEDTotalDuration) {
           digitalWrite(orangePin, HIGH);  // Turn off orange LED
+          orangecounter++;
           digitalWrite(command_out_pin, LOW); // Send command to start flush pump
           Serial.println("command out pin low");
           orangeLEDActive = false;  // Reset the flag
@@ -274,7 +282,7 @@ void loop() {
           orangeLEDOffCount++;  // Increment the orange LED off counter
 
           // After the orange LED has been turned off twice, activate the red LED
-          if (orangeLEDOffCount >= 2 && !redLEDActive) {
+          if (orangecounter == 4) {
             digitalWrite(redPin, LOW);  // Turn on red LED
             redLEDActive = true;  // Set flag to track red LED status
             Serial.println("Red LED activated.");
