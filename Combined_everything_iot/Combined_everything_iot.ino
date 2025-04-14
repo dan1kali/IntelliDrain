@@ -56,7 +56,8 @@ int voltage_A_pin = A0;
 const int LOADCELL_SCK_PIN = 12; // Sensor serial clock
 const int LOADCELL_DOUT_PIN = 8; // Sensor load cell data
 const byte redPin = 0, orangePin = 1, greenPin = 2;  // Pins for LEDs
-const byte buttonPin = 6;  // Pin for button
+const byte resetButtonPin = 6;  // Pin for button
+const byte flushButtonPin = 7;  // Pin for button to flush immediately
 
 // Your WiFi credentials, set password to "" for open networks.
 char ssid[] = "Rice Visitor";
@@ -164,7 +165,8 @@ void setup() {
   pinMode(redPin, OUTPUT);
   pinMode(orangePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
-  pinMode(buttonPin, INPUT_PULLUP); // Configure button pin as input with internal pull-up resistor
+  pinMode(resetButtonPin, INPUT_PULLUP); // Configure button pin as input with internal pull-up resistor
+  pinMode(flushButtonPin, INPUT_PULLUP); // Configure button pin as input with internal pull-up resistor
 
   
   digitalWrite(redPin, HIGH);  
@@ -254,26 +256,37 @@ void loop() {
 
   // Check for button press to turn off red LED
   if (redLEDActive) {  // Only update load cell readings if the red LED is not active
-    if (digitalRead(buttonPin) == LOW) {  // Button is pressed (assuming button is connected to ground)
+    if (digitalRead(resetButtonPin) == LOW) {  // Button is pressed (assuming button is connected to ground)
       digitalWrite(redPin, HIGH);  // Turn off red LED
       redLEDActive = false;  // Reset the red LED active flag
       digitalWrite(greenPin, LOW);  // Reactivate green LED
       orangeLEDOffCount = 0;  // Reset the orange LED off counter
-      // Serial.println("Pintout:" + string(digitalRead(buttonPin)));
+      // Serial.println("Pintout:" + string(digitalRead(resetButtonPin)));
       Serial.println("Red LED turned off. Resume.");
       delay(200);  // Simple debounce delay
     }
   }
 
-  if (newDataReady) {
+  if (digitalRead(flushButtonPin) == LOW) {  // Button is pressed (assuming button is connected to ground)
+    redLEDActive = false;  // Reset the red LED active flag
+    digitalWrite(greenPin, HIGH);  // Turn off green LED
+    digitalWrite(orangePin, LOW);  // Turn on orange LED
+    flush_now = true;
+  }
+  else {
+  flush_now = false;
+  digitalWrite(orangePin, HIGH);  // Turn off orange
+  digitalWrite(greenPin, LOW);  // Turn off green LED
+  }
+  
+
+
+  if (newDataReady && !flush_now) {
     if (millis() > t + updateInterval) {
 
       float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
       float weight0 = LoadCell_0.getData(); 
       updateSerial(totalTimeinSeconds,weight0);
-
-
-
 
 
       if (redLEDActive) {
@@ -288,7 +301,7 @@ void loop() {
         
         // Check if the orange LED is not active (i.e., green LED should remain on)
         if (!orangeLEDActive) {
-          Serial.println(currentMillis - startMillis);
+          //Serial.println(currentMillis - startMillis);
           if (currentMillis - startMillis >= startDelayTime) {
 
             if (weight0 <= threshold) {
