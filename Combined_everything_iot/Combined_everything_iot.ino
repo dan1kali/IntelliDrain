@@ -309,7 +309,6 @@ void loop() {
               orangeLEDActive = true;  // Set the flag to true to track the orange LED timing
               digitalWrite(greenPin, HIGH);  // Turn off green LED when orange is activated
 
-
             /* digitalWrite(redPin, LOW);  // Turn on red LED
             redLEDActive = true;  // Set flag to track red LED status
             red_led_stop = true;//new
@@ -331,7 +330,7 @@ void loop() {
           
           // digitalWrite(command_out_pin, HIGH); // Send command to start flush pump
           clog_yn = true; // replace with this flag
-          Serial.println("clog_yn set to true");
+          //Serial.println("clog_yn set to true");
 
         }
 
@@ -342,7 +341,7 @@ void loop() {
           
           //digitalWrite(command_out_pin, LOW); // Send command to start flush pump
           clog_yn = false; // replace with this flag
-          Serial.println("clog_yn set to false");
+          //Serial.println("clog_yn set to false");
 
           orangeLEDActive = false;  // Reset the flag
           digitalWrite(greenPin, LOW);  // Turn green LED back on after orange LED is off
