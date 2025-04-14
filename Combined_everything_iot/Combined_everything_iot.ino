@@ -36,7 +36,7 @@ unsigned long flush_timer_limit = 0;
 bool timer_enabled = true;
 
 // Flags and states
-bool clog_yn = false, flush_now = false;
+bool clog_yn = false, flush_now = false, red_led_stop = false;
 int count = 0;
 bool RPwrstate = 0; //Assign variables
 bool LPwrstate = 0;
@@ -255,10 +255,11 @@ void loop() {
   }
 
   // Check for button press to turn off red LED
-  if (redLEDActive) {  // Only update load cell readings if the red LED is not active
+  if (redLEDActive) {  // Only allow reset if red LED is active
     if (digitalRead(resetButtonPin) == LOW) {  // Button is pressed (assuming button is connected to ground)
       digitalWrite(redPin, HIGH);  // Turn off red LED
       redLEDActive = false;  // Reset the red LED active flag
+      red_led_stop = false;  // Reset the red LED active flag
       digitalWrite(greenPin, LOW);  // Reactivate green LED
       orangeLEDOffCount = 0;  // Reset the orange LED off counter
       // Serial.println("Pintout:" + string(digitalRead(resetButtonPin)));
@@ -268,7 +269,6 @@ void loop() {
   }
 
   if (digitalRead(flushButtonPin) == LOW) {  // Button is pressed (assuming button is connected to ground)
-    redLEDActive = false;  // Reset the red LED active flag
     digitalWrite(greenPin, HIGH);  // Turn off green LED
     digitalWrite(orangePin, LOW);  // Turn on orange LED
     flush_now = true;
@@ -308,6 +308,12 @@ void loop() {
               orangeLEDStartTime = millis();  // Record the start time
               orangeLEDActive = true;  // Set the flag to true to track the orange LED timing
               digitalWrite(greenPin, HIGH);  // Turn off green LED when orange is activated
+
+
+            /* digitalWrite(redPin, LOW);  // Turn on red LED
+            redLEDActive = true;  // Set flag to track red LED status
+            red_led_stop = true;//new
+            Serial.println("TES Red LED activated."); */
             }
 
           }
@@ -346,8 +352,7 @@ void loop() {
             if (orangecounter == 4) {
             digitalWrite(redPin, LOW);  // Turn on red LED
             redLEDActive = true;  // Set flag to track red LED status
-            startAbscessSuction(); //new
-            stopSaline();//new
+            red_led_stop = true;
             Serial.println("Red LED activated.");
           }
         }
@@ -535,11 +540,15 @@ void handle_pump_logic() {
 
   ////////////////////////////////////////
   // Normal operation (no clog, no flush)
-  if (!flush_now && !clog_yn) {
+  if (!flush_now && !clog_yn && !red_led_stop) {
     startAbscessSuction();
     stopSaline();
   }
 
+  else if (red_led_stop) {
+  stopAbscess();
+  stopSaline();
+  }
   ////////////////////////////////////////
   // Clogged operation (reverse flow and flush)
   else if (clog_yn || flush_now) {
