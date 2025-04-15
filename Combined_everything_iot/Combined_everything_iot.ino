@@ -46,18 +46,18 @@ int spdt_proceedyn = 0;
 int flush_cycle_proceedyn = 0;
 
 // Pin assignments
-int in1 = 10, in2 = 11, in3 = 4, in4 = 5, pinSaline = 3,pinAbscess = 9;
+int in1 = 12, in2 = 13, in3 = 9, in4 = 10, pinSaline = 8,pinAbscess = 11;
 int pinPwrA = A2, pinPwrB = A3;
 int voltage_A_pin = A0;
 
 ////////////////////////////////////////////////////////////
 
 ///// PIN DEFINITIONS /////
-const int LOADCELL_SCK_PIN = 12; // Sensor serial clock
-const int LOADCELL_DOUT_PIN = 8; // Sensor load cell data
+const int LOADCELL_SCK_PIN = 6; // Sensor serial clock
+const int LOADCELL_DOUT_PIN = 5; // Sensor load cell data
 const byte redPin = 0, orangePin = 1, greenPin = 2;  // Pins for LEDs
-const byte resetButtonPin = 6;  // Pin for button
-const byte flushButtonPin = 7;  // Pin for button to flush immediately
+const byte resetButtonPin = 3;  // Pin for button
+const byte flushButtonPin = 4;  // Pin for button to flush immediately
 
 // Your WiFi credentials, set password to "" for open networks.
 char ssid[] = "Rice Visitor";
