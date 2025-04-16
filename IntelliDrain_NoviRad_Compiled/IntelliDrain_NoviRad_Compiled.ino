@@ -34,11 +34,11 @@ int flush_cycle_proceedyn = 0;
 int in1 = 12, in2 = 13, in3 = 9, in4 = 10, pinSaline = 8, pinAbscess = 11;
 int pinPwrA = A2, pinPwrB = A3;
 int voltage_A_pin = A0;
-const int LOADCELL_SCK_PIN = 5; // Sensor serial clock
-const int LOADCELL_DOUT_PIN = 6; // Sensor load cell data
-const byte redPin = 2, orangePin = 1, greenPin = 0;  // Pins for LEDs
-const byte buttonResetPin = 3;  // Pin for reset button
-const byte buttonFlushPin = 4; // Pin for flush button
+const int LOADCELL_SCK_PIN = 3; // Sensor Serial clock
+const int LOADCELL_DOUT_PIN = 4; // Sensor load cell data
+const byte redPin = 14, orangePin = 15, greenPin = 16;  // Pins for LEDs
+const byte buttonResetPin = 5;  // Pin for reset button
+const byte buttonFlushPin = 6; // Pin for flush button
 
 ///// LOAD CELL SETUP /////
 HX711_ADC LoadCell_0(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN); // Sensor Load Cell
@@ -71,7 +71,7 @@ float threshold = 0;  // Default threshold value
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void setup() {
-  ///// SERIAL COMMUNICATION INITIALIZATION /////
+  ///// Serial COMMUNICATION INITIALIZATION /////
   delay(3000);
   Serial.begin(9600);
   Serial.println("Starting...");

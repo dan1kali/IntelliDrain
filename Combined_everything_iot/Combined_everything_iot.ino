@@ -55,7 +55,7 @@ int voltage_A_pin = A0;
 ///// PIN DEFINITIONS /////
 const int LOADCELL_SCK_PIN = 3; // Sensor serial clock
 const int LOADCELL_DOUT_PIN = 4; // Sensor load cell data
-const byte redPin = 2, orangePin = 1, greenPin = 0;  // Pins for LEDs
+const byte redPin = 14, orangePin = 15, greenPin = 16;  // Pins for LEDs
 const byte resetButtonPin = 5;  // Pin for button
 const byte flushButtonPin = 6;  // Pin for button to flush immediately
 
