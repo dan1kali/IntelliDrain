@@ -31,14 +31,14 @@ int spdtstate = 0; // 1 = Normal, 0 = Off, -1 = prime
 int flush_cycle_proceedyn = 0;
 
 ///// PIN DEFINITIONS /////
-int in1 = 10, in2 = 11, in3 = 4, in4 = 5, pinSaline = 3, pinAbscess = 9;
+int in1 = 12, in2 = 13, in3 = 9, in4 = 10, pinSaline = 8, pinAbscess = 11;
 int pinPwrA = A2, pinPwrB = A3;
 int voltage_A_pin = A0;
-const int LOADCELL_SCK_PIN = 12; // Sensor serial clock
-const int LOADCELL_DOUT_PIN = 8; // Sensor load cell data
-const byte redPin = 0, orangePin = 1, greenPin = 2;  // Pins for LEDs
-const byte buttonResetPin = 6;  // Pin for reset button
-const byte buttonFlushPin = 7; // Pin for flush button
+const int LOADCELL_SCK_PIN = 5; // Sensor serial clock
+const int LOADCELL_DOUT_PIN = 6; // Sensor load cell data
+const byte redPin = 2, orangePin = 1, greenPin = 0;  // Pins for LEDs
+const byte buttonResetPin = 3;  // Pin for reset button
+const byte buttonFlushPin = 4; // Pin for flush button
 
 ///// LOAD CELL SETUP /////
 HX711_ADC LoadCell_0(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN); // Sensor Load Cell

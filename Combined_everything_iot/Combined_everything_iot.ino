@@ -53,11 +53,11 @@ int voltage_A_pin = A0;
 ////////////////////////////////////////////////////////////
 
 ///// PIN DEFINITIONS /////
-const int LOADCELL_SCK_PIN = 5; // Sensor serial clock
-const int LOADCELL_DOUT_PIN = 6; // Sensor load cell data
+const int LOADCELL_SCK_PIN = 3; // Sensor serial clock
+const int LOADCELL_DOUT_PIN = 4; // Sensor load cell data
 const byte redPin = 2, orangePin = 1, greenPin = 0;  // Pins for LEDs
-const byte resetButtonPin = 3;  // Pin for button
-const byte flushButtonPin = 4;  // Pin for button to flush immediately
+const byte resetButtonPin = 5;  // Pin for button
+const byte flushButtonPin = 6;  // Pin for button to flush immediately
 
 // Your WiFi credentials, set password to "" for open networks.
 char ssid[] = "Rice Visitor";
