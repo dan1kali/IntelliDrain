@@ -16,6 +16,8 @@ bool verbosex = true;
 
 //Tracking metrics
 float totalflushvol = 0.0, totalflushtime = 0.0;
+int flushcounter = 0, prevflushcounter = 0, didaflushtrigger = 0;
+
 
 // Timers
 unsigned long absess_flush_timer_start = 0; //Flush performed when clog is detected
@@ -105,12 +107,14 @@ void setup() {
 
   ///// LOAD CELL INITIALIZATION /////
   Sensor_LoadCell_0.begin();
+  Drainage_LoadCell_1.begin();
 
   ///// TARE & STABILIZATION /////
   unsigned long stabilizingtime = 2000; // tare precision can be improved by adding a few seconds of stabilizing time
   boolean _tare = true; // tare operation will be performed
   byte loadcell_0_rdy = 0;  
   Sensor_LoadCell_0.start(stabilizingtime, _tare);
+  Drainage_LoadCell_1.start(stabilizingtime, _tare);
   delay(2000);
 
   ///// CURRENT TIME /////
@@ -248,21 +252,35 @@ void loop() {
     OneCountDone = false;
     TwoCount = false;
     TwoCountDone = false;
-    Serial.println("Red LED turned off. Resume.");
+    //Serial.println("Red LED turned off. Resume.");
     delay(200);
   }
 
   if (newDataReady && currentMillis > t + updateInterval && !flush_now) {
     float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
-    float weight0 = Sensor_LoadCell_0.getData();
-    updateSerial(totalTimeinSeconds, weight0);
+    float occlusionSensorValue = Sensor_LoadCell_0.getData();
+
+    float drainageVolume = Drainage_LoadCell_1.getData();
+
+    float salineVolume = flushcounter*15;
+
+      if (flushcounter == prevflushcounter + 1) {
+        didaflushtrigger = 1;
+      } else {
+        didaflushtrigger = 0;
+      }
+    prevflushcounter = flushcounter;
+    
+    //updateSerial(totalTimeinSeconds, occlusionSensorValue);
+
+    updateSerial(totalTimeinSeconds, occlusionSensorValue, drainageVolume, salineVolume, didaflushtrigger);
 
     // LED logic
     if (redLEDActive) {
       digitalWrite(greenPin, HIGH);
       digitalWrite(orangePin, HIGH);
     } else {
-      if (!orangeLEDActive && totalTimeinSeconds >= 42 && weight0 <= threshold) {
+      if (!orangeLEDActive && totalTimeinSeconds >= 42 && occlusionSensorValue <= threshold) {
         orangeLEDStartTime = millis();
         orangeLEDActive = true;
         digitalWrite(greenPin, HIGH);
@@ -271,7 +289,7 @@ void loop() {
 
     // Manual flush button press
     if (digitalRead(buttonFlushPin) == LOW && !orangeLEDActive) {
-      Serial.println("Manual flush triggered.");
+      //Serial.println("Manual flush triggered.");
       orangeLEDStartTime = millis();
       orangeLEDActive = true;
       digitalWrite(greenPin, HIGH);
@@ -286,7 +304,7 @@ void loop() {
       if (elapsedTime < orangeLEDTotalDuration) {
         digitalWrite(orangePin, LOW);
         clog_yn = true; 
-        Serial.println("clog_yn set to true");
+        //Serial.println("clog_yn set to true");
       } 
 
       if (elapsedTime >= orangeLEDTotalDuration) {
@@ -294,7 +312,7 @@ void loop() {
         clog_yn = false;
         orangeLEDActive = false;
         orangeLEDOffCount++;
-        Serial.println("orange LED count: " + String(orangeLEDOffCount));
+        //Serial.println("orange LED count: " + String(orangeLEDOffCount));
         digitalWrite(greenPin, LOW);
       }
     }
@@ -302,21 +320,21 @@ void loop() {
     // Orange LED tracking logic
     if (orangeLEDOffCount == 1 && !OneCountDone) {
       twiceLEDStartTime = millis();
-      Serial.println("orange start: " + String(twiceLEDStartTime));
+      //Serial.println("orange start: " + String(twiceLEDStartTime));
       OneCount = true;
       OneCountDone = true;
     }
 
     if (orangeLEDOffCount == 2 && OneCount && !TwoCountDone) {
       twiceLEDEndTime = millis();
-      Serial.println("orange end: " + String(twiceLEDEndTime));
+      //Serial.println("orange end: " + String(twiceLEDEndTime));
       TwoCount = true;
       TwoCountDone = true;
     }
 
     if (TwoCount) {
       timeBetween = (twiceLEDEndTime - twiceLEDStartTime) - orangeLEDTotalDuration;
-      Serial.println("time between: " + String(timeBetween));
+      //Serial.println("time between: " + String(timeBetween));
     }
 
     // Red LED logic
@@ -325,19 +343,19 @@ void loop() {
         digitalWrite(redPin, LOW);
         redLEDActive = true;
         red_led_stop = true;
-        Serial.println("Red LED activated.");
+        //Serial.println("Red LED activated.");
       } else {
         orangeLEDOffCount = 0;
         OneCount = false;
         OneCountDone = false;
         TwoCount = false;
         TwoCountDone = false;
-        Serial.println("No problems. Continue detection.");
+        //Serial.println("No problems. Continue detection.");
       }
     }
 
     // Green LED default (on when idle)
-    if (weight0 > threshold && !redLEDActive && !orangeLEDActive) {
+    if (occlusionSensorValue > threshold && !redLEDActive && !orangeLEDActive) {
       digitalWrite(greenPin, LOW);
     } else {
       digitalWrite(greenPin, HIGH);
@@ -351,21 +369,23 @@ void loop() {
   ///////////// NOVIRAD MAIN LOOP FUNCTION ///////////////////
   ////////////////////////////////////////////////////////////
 
-  // Timer-based pump control for periodic flushing
-  flush_cycle_proceedyn = handle_flush_cycle();
-  if (flush_cycle_proceedyn == 0) {return;}
-
   // CHECK FOR CLOG FUNCTION, then turn clog_yn flag to true  //
   // Handle pump logic based on sensor readings and states
   handle_pump_logic();
 
 }
 
-void updateSerial(float totalTimeinSeconds, float weight0) { // Display elapsed time
+void updateSerial(float totalTimeinSeconds, float occlusionSensorValue, float drainageVolume, float salineVolume, int flushTimes) { // Display elapsed time
 
   Serial.print(totalTimeinSeconds, 3);
   Serial.print(", ");
-  Serial.println(weight0);
+  Serial.print(occlusionSensorValue);
+  Serial.print(", ");
+  Serial.print(salineVolume);
+  Serial.print(", ");
+  Serial.print(drainageVolume);
+  Serial.print(", ");
+  Serial.println(flushTimes);
 
 }
 
@@ -466,9 +486,9 @@ void handle_pump_logic() {
     absess_flush_timer_start = millis();
     absess_flush_timer_limit = flush_duration * 1000; // Wait for stabilization
 
-    Serial.print("CLOG FLUSHING FOR: ");
-    Serial.print(flush_duration);
-    Serial.println(" seconds");
+    //Serial.print("CLOG FLUSHING FOR: ");
+    //Serial.print(flush_duration);
+    //Serial.println(" seconds");
     while (millis() - absess_flush_timer_start < absess_flush_timer_limit) {
       //Serial.println("Reversing pump and flush to clear clog");
     } 
@@ -476,7 +496,10 @@ void handle_pump_logic() {
       flush_now = false;
       clog_yn = false;
       totalflushtime += flush_duration; //Log flush duration
-      Serial.println("CLOG FLUSHING COMPLETED!");
+      //Serial.println("CLOG FLUSHING COMPLETED!");
+      flushcounter++;
+      //Serial.println(flushcounter);
+
 
       //RESET PERIODIC TIMER
       setup_timer();
@@ -492,15 +515,13 @@ void handle_pump_logic() {
 ////////////// FLUSH CYCLE START FUNCTION //////////////////
 ////////////////////////////////////////////////////////////
 
-// working version, no one knows why
-
 int handle_flush_cycle() { 
   unsigned long current_time = millis();
   //Serial.print("Time elapsed since last flush: ");
   //Serial.println(current_time - flush_timer_start);
   
   if (current_time - flush_timer_start >= flush_frequency * 60.0 * 1000.0) {   
-    Serial.println("Starting periodic flush cycle...");
+    //ln("Starting periodic flush cycle...");
     // Start the flush cycle (stop abscess, start saline)
     stopAbscess();
     startSalinePropulsion();
@@ -510,7 +531,7 @@ int handle_flush_cycle() {
       // Reset timer after flush cycle
       setup_timer();
       totalflushtime += flush_duration; // Log flush duration
-      Serial.println("Flush cycle completed.");
+      //Serial.println("Flush cycle completed.");
       return 1;
     } else {
       // Flush not yet completed
@@ -547,7 +568,7 @@ void update_settings(String abscess_power, String flush_power, String flush_volu
     //TODO: auto-flushing turned on      
   }
   else if (auto_flush.toInt() == 2){
-    Serial.println("Prompted immediate flush of the system");
+    //Serial.println("Prompted immediate flush of the system");
     flush_now = true;    
   }
 
