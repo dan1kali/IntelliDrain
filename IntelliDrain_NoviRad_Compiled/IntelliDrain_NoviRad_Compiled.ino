@@ -31,7 +31,7 @@ int spdtstate = 0; // 1 = Normal, 0 = Off, -1 = prime
 int flush_cycle_proceedyn = 0;
 
 ///// PIN DEFINITIONS /////
-int in1 = 12, in2 = 13, in3 = 9, in4 = 10, pinSaline = 8, pinAbscess = 11;
+int in1 = 12, in2 = 11, in3 = 9, in4 = 10, pinSaline = 8, pinAbscess = 13;
 int pinPwrA = A2, pinPwrB = A3;
 int voltage_A_pin = A0;
 const int LOADCELL_SCK_PIN = 3; // Sensor Serial clock
@@ -350,7 +350,6 @@ void loop() {
   if (flush_cycle_proceedyn == 0) {return;}
 
   // CHECK FOR CLOG FUNCTION, then turn clog_yn flag to true  //
-
   // Handle pump logic based on sensor readings and states
   handle_pump_logic();
 
@@ -435,6 +434,7 @@ void handle_pump_logic() {
   ////////////////////////////////////////
   // Normal operation (no clog, no flush)
   if (!flush_now && !clog_yn && !red_led_stop) {
+    //Serial.println("normal drain");
     startAbscessSuction();
     stopSaline();
   }
@@ -570,11 +570,13 @@ void stopAbscess() {
 void stopSaline() {
   digitalWrite(in3, LOW);
   digitalWrite(in4, LOW);
+  //Serial.println("stop saline happening");
 }
 
 void startAbscessSuction() {
   digitalWrite(in1, HIGH);
   digitalWrite(in2, LOW);
+  //Serial.println("start abscess happening");
 }
 
 void startAbscessReverse() {

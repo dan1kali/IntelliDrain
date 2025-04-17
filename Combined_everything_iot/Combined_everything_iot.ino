@@ -46,7 +46,7 @@ int spdt_proceedyn = 0;
 int flush_cycle_proceedyn = 0;
 
 // Pin assignments
-int in1 = 12, in2 = 13, in3 = 9, in4 = 10, pinSaline = 8,pinAbscess = 11;
+int in1 = 12, in2 = 11, in3 = 9, in4 = 10, pinSaline = 8,pinAbscess = 13;
 int pinPwrA = A2, pinPwrB = A3;
 int voltage_A_pin = A0;
 
