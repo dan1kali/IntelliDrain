@@ -34,14 +34,20 @@ int flush_cycle_proceedyn = 0;
 int in1 = 12, in2 = 11, in3 = 9, in4 = 10, pinSaline = 8, pinAbscess = 13;
 int pinPwrA = A2, pinPwrB = A3;
 int voltage_A_pin = A0;
-const int LOADCELL_SCK_PIN = 3; // Sensor Serial clock
-const int LOADCELL_DOUT_PIN = 4; // Sensor load cell data
+const int sensorSckPin = 3; // Sensor Serial clock
+const int sensorDoutPin = 4; // Sensor load cell data
+const int drainageSckPin = 18; // Sensor load cell data
+const int drainageDoutPin = 17; // Sensor load cell data
+const int salineSckPin = 20; // Sensor load cell data
+const int salineDoutPin = 19; // Sensor load cell data
 const byte redPin = 14, orangePin = 15, greenPin = 16;  // Pins for LEDs
 const byte buttonResetPin = 5;  // Pin for reset button
 const byte buttonFlushPin = 6; // Pin for flush button
 
 ///// LOAD CELL SETUP /////
-HX711_ADC LoadCell_0(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN); // Sensor Load Cell
+HX711_ADC Sensor_LoadCell_0(sensorDoutPin, sensorSckPin); // Sensor Load Cell
+HX711_ADC Drainage_LoadCell_1(drainageDoutPin, drainageSckPin); // Sensor Load Cell
+HX711_ADC Saline_LoadCell_2(salineDoutPin, salineSckPin); // Sensor Load Cell
 
 ///// TIME VARIABLES /////
 unsigned long t = 0; // To track time
@@ -98,24 +104,24 @@ void setup() {
   float calibrationValue_0 = -286.04; // Calibration value for sensor load cell
 
   ///// LOAD CELL INITIALIZATION /////
-  LoadCell_0.begin();
+  Sensor_LoadCell_0.begin();
 
   ///// TARE & STABILIZATION /////
   unsigned long stabilizingtime = 2000; // tare precision can be improved by adding a few seconds of stabilizing time
   boolean _tare = true; // tare operation will be performed
   byte loadcell_0_rdy = 0;  
-  LoadCell_0.start(stabilizingtime, _tare);
+  Sensor_LoadCell_0.start(stabilizingtime, _tare);
   delay(2000);
 
   ///// CURRENT TIME /////
   startMillis = millis(); // Stores time, in milliseconds, since the Arduino was powered on or reset (current time) ****************************
 
-  if (LoadCell_0.getTareTimeoutFlag()) {
+  if (Sensor_LoadCell_0.getTareTimeoutFlag()) {
     Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
     while (1);
   }
   else {
-    LoadCell_0.setCalFactor(calibrationValue_0); // set calibration value (float)
+    Sensor_LoadCell_0.setCalFactor(calibrationValue_0); // set calibration value (float)
     Serial.println("Startup is complete");
   }
 
@@ -166,8 +172,8 @@ void loop() {
         }
 
         // Take one reading every 1000ms
-        if (currentMillis - lastOpenReadTime >= 1000 && LoadCell_0.update()) {
-          openReadings[openIndex] = LoadCell_0.getData();
+        if (currentMillis - lastOpenReadTime >= 1000 && Sensor_LoadCell_0.update()) {
+          openReadings[openIndex] = Sensor_LoadCell_0.getData();
           Serial.println("Open reading " + String(openIndex + 1) + ": " + String(openReadings[openIndex]));
           openIndex++;
           lastOpenReadTime = currentMillis;
@@ -195,8 +201,8 @@ void loop() {
         }
 
         // Take one reading every 1000ms
-        if (currentMillis - lastClosedReadTime >= 1000 && LoadCell_0.update()) {
-          closedReadings[closedIndex] = LoadCell_0.getData();
+        if (currentMillis - lastClosedReadTime >= 1000 && Sensor_LoadCell_0.update()) {
+          closedReadings[closedIndex] = Sensor_LoadCell_0.getData();
           Serial.println("Closed reading " + String(closedIndex + 1) + ": " + String(closedReadings[closedIndex]));
           closedIndex++;
           lastClosedReadTime = currentMillis;
@@ -227,7 +233,7 @@ void loop() {
 
   ///// -------------------- OPERATIONAL PHASE -------------------- /////
 
-  if (!redLEDActive && LoadCell_0.update()) {
+  if (!redLEDActive && Sensor_LoadCell_0.update()) {
     newDataReady = true;
   }
 
@@ -248,7 +254,7 @@ void loop() {
 
   if (newDataReady && currentMillis > t + updateInterval && !flush_now) {
     float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
-    float weight0 = LoadCell_0.getData();
+    float weight0 = Sensor_LoadCell_0.getData();
     updateSerial(totalTimeinSeconds, weight0);
 
     // LED logic

@@ -53,8 +53,12 @@ int voltage_A_pin = A0;
 ////////////////////////////////////////////////////////////
 
 ///// PIN DEFINITIONS /////
-const int LOADCELL_SCK_PIN = 3; // Sensor serial clock
-const int LOADCELL_DOUT_PIN = 4; // Sensor load cell data
+const int sensorSckPin = 3; // Sensor serial clock
+const int sensorDoutPin = 4; // Sensor load cell data
+const int drainageSckPin = 18; // Sensor load cell data
+const int drainageDoutPin = 17; // Sensor load cell data
+const int salineSckPin = 20; // Sensor load cell data
+const int salineDoutPin = 19; // Sensor load cell data
 const byte redPin = 14, orangePin = 15, greenPin = 16;  // Pins for LEDs
 const byte resetButtonPin = 5;  // Pin for button
 const byte flushButtonPin = 6;  // Pin for button to flush immediately
@@ -64,7 +68,9 @@ char ssid[] = "Rice Visitor";
 char pass[] = "";
 
 ///// LOAD CELL SETUP /////
-HX711_ADC LoadCell_0(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN); // Sensor Load Cell
+HX711_ADC Sensor_LoadCell_0(sensorDoutPin, sensorSckPin); // Sensor Load Cell
+HX711_ADC Drainage_LoadCell_1(drainageDoutPin, drainageSckPin); // Sensor Load Cell
+HX711_ADC SalineLoadCell_2(salineDoutPin, salineSckPin); // Sensor Load Cell
 
 ///// TIME VARIABLES /////
 unsigned long t = 0;
@@ -140,24 +146,24 @@ void setup() {
   float calibrationValue_0 = -286.04; // Calibration value for sensor load cell
 
   ///// LOAD CELL INITIALIZATION /////
-  LoadCell_0.begin();
+  Sensor_LoadCell_0.begin();
 
   ///// TARE & STABILIZATION /////
   unsigned long stabilizingtime = 2000; // tare precision can be improved by adding a few seconds of stabilizing time
   boolean _tare = true; // tare operation will be performed
   byte loadcell_0_rdy = 0;  
-  LoadCell_0.start(stabilizingtime, _tare);
+  Sensor_LoadCell_0.start(stabilizingtime, _tare);
   delay(2000);
 
   ///// CURRENT TIME /////
   startMillis = millis(); // Stores time, in milliseconds, since the Arduino was powered on or reset (current time) ****************************
 
-  if (LoadCell_0.getTareTimeoutFlag()) {
+  if (Sensor_LoadCell_0.getTareTimeoutFlag()) {
     Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
     while (1);
   }
   else {
-    LoadCell_0.setCalFactor(calibrationValue_0); // set calibration value (float)
+    Sensor_LoadCell_0.setCalFactor(calibrationValue_0); // set calibration value (float)
     Serial.println("Startup is complete");
   }
 
@@ -185,8 +191,8 @@ void setup() {
   unsigned long lastGreenLEDFlashTime = 0;    // Store the time of the last flash
 
   for (int i = 1; i <= 10; i++) {
-    if (LoadCell_0.update()) {
-      openrecording = LoadCell_0.getData(); // Take reading
+    if (Sensor_LoadCell_0.update()) {
+      openrecording = Sensor_LoadCell_0.getData(); // Take reading
       Serial.println(openrecording); // DELETE LATER
       openthresholdsum += openrecording; // Add current reading to sum
       delay(1000);
@@ -206,8 +212,8 @@ void setup() {
   delay(5000);
 
   for (int i = 1; i <= 10; i++) {
-    if (LoadCell_0.update()) {
-      closedrecording = LoadCell_0.getData(); // Take reading
+    if (Sensor_LoadCell_0.update()) {
+      closedrecording = Sensor_LoadCell_0.getData(); // Take reading
       Serial.println(closedrecording); // DELETE LATER
       closedthresholdsum += closedrecording; // Add current reading to sum
       delay(1000);
@@ -251,7 +257,7 @@ void loop() {
 
   ///// DISPLAY CURRENT LOAD CELL DATA ///// 
   if (!redLEDActive) {  // Only update load cell readings if the red LED is not active
-    if (LoadCell_0.update()) newDataReady = true;
+    if (Sensor_LoadCell_0.update()) newDataReady = true;
   }
 
   // Check for button press to turn off red LED
@@ -285,7 +291,7 @@ void loop() {
     if (millis() > t + updateInterval) {
 
       float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
-      float weight0 = LoadCell_0.getData(); 
+      float weight0 = Sensor_LoadCell_0.getData(); 
       updateSerial(totalTimeinSeconds,weight0);
 
 
