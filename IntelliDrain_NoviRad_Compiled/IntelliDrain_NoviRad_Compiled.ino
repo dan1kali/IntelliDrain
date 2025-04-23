@@ -20,8 +20,8 @@ int flushcounter = 0, prevflushcounter = 0, didaflushtrigger = 0;
 
 
 // Timers
-unsigned long absess_flush_timer_start = 0; //Flush performed when clog is detected
-unsigned long absess_flush_timer_limit = 0;
+unsigned long abscess_flush_timer_start = 0; //Flush performed when clog is detected
+unsigned long abscess_flush_timer_limit = 0;
 unsigned long flush_timer_start = 0; //Flush performed when periodic flush is performed
 
 // Flags and states
@@ -36,20 +36,20 @@ int flush_cycle_proceedyn = 0;
 int in1 = 12, in2 = 11, in3 = 9, in4 = 10, pinSaline = 8, pinAbscess = 13;
 int pinPwrA = A2, pinPwrB = A3;
 int voltage_A_pin = A0;
-const int sensorSckPin = 3; // Sensor Serial clock
-const int sensorDoutPin = 4; // Sensor load cell data
-const int drainageSckPin = 18; // Sensor load cell data
-const int drainageDoutPin = 17; // Sensor load cell data
-const int salineSckPin = 20; // Sensor load cell data
-const int salineDoutPin = 19; // Sensor load cell data
+const int sensorSckPin = 3; // Load cell clock
+const int sensorDoutPin = 4; // Load cell data
+const int drainageSckPin = 18; // Drainage weight scale clock
+const int drainageDoutPin = 17; // Drainage weight scale data
+const int salineSckPin = 20; // Saline weight scale clock
+const int salineDoutPin = 19; // Saline weight scale data
 const byte redPin = 14, orangePin = 15, greenPin = 16;  // Pins for LEDs
 const byte buttonResetPin = 5;  // Pin for reset button
 const byte buttonFlushPin = 6; // Pin for flush button
 
 ///// LOAD CELL SETUP /////
-HX711_ADC Sensor_LoadCell_0(sensorDoutPin, sensorSckPin); // Sensor Load Cell
-HX711_ADC Drainage_LoadCell_1(drainageDoutPin, drainageSckPin); // Sensor Load Cell
-HX711_ADC Saline_LoadCell_2(salineDoutPin, salineSckPin); // Sensor Load Cell
+HX711_ADC Sensor_LoadCell(sensorDoutPin, sensorSckPin); // Sensor Load Cell
+HX711_ADC Drainage_WeightScale(drainageDoutPin, drainageSckPin); // Sensor Load Cell
+HX711_ADC Saline_WeightScale(salineDoutPin, salineSckPin); // Sensor Load Cell
 
 ///// TIME VARIABLES /////
 unsigned long t = 0; // To track time
@@ -103,29 +103,33 @@ void setup() {
   Serial.println("Pump Control System Ready");
 
   ///// CALIBRATION VALUES /////
-  float calibrationValue_0 = -286.04; // Calibration value for sensor load cell
+  float calibrationValue_Sensor_LoadCell = -286.04; // Calibration value for sensor load cell
+  float calibrationValue_Drainage_WeightScale = 230;
+  float calibrationValue_Saline_WeightScale = 230;
 
   ///// LOAD CELL INITIALIZATION /////
-  Sensor_LoadCell_0.begin();
-  Drainage_LoadCell_1.begin();
+  Sensor_LoadCell.begin();
+  Drainage_WeightScale.begin();
+  Saline_WeightScale.begin();
 
   ///// TARE & STABILIZATION /////
   unsigned long stabilizingtime = 2000; // tare precision can be improved by adding a few seconds of stabilizing time
   boolean _tare = true; // tare operation will be performed
-  byte loadcell_0_rdy = 0;  
-  Sensor_LoadCell_0.start(stabilizingtime, _tare);
-  Drainage_LoadCell_1.start(stabilizingtime, _tare);
-  delay(2000);
+  Sensor_LoadCell.start(stabilizingtime, _tare);
+  Drainage_WeightScale.start(stabilizingtime, _tare);
+  Saline_WeightScale.start(stabilizingtime, _tare);
 
   ///// CURRENT TIME /////
   startMillis = millis(); // Stores time, in milliseconds, since the Arduino was powered on or reset (current time) ****************************
 
-  if (Sensor_LoadCell_0.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 wiring and pin designations");
+  if (Sensor_LoadCell.getTareTimeoutFlag() || Drainage_WeightScale.getTareTimeoutFlag() || Saline_WeightScale.getTareTimeoutFlag()) {
+    Serial.println("Timeout, check load cell and weight scale wiring and pin designations");
     while (1);
   }
   else {
-    Sensor_LoadCell_0.setCalFactor(calibrationValue_0); // set calibration value (float)
+    Sensor_LoadCell.setCalFactor(calibrationValue_Sensor_LoadCell); // set calibration value (float)
+    Drainage_WeightScale.setCalFactor(calibrationValue_Drainage_WeightScale);
+    Saline_WeightScale.setCalFactor(calibrationValue_Saline_WeightScale);
     Serial.println("Startup is complete");
   }
 
@@ -141,7 +145,7 @@ void setup() {
   digitalWrite(greenPin, LOW);  /// Start with green LED
   Serial.println("System on!");
   
-  delay(3000); 
+  delay(1000); 
 
 }
 
@@ -176,8 +180,8 @@ void loop() {
         }
 
         // Take one reading every 1000ms
-        if (currentMillis - lastOpenReadTime >= 1000 && Sensor_LoadCell_0.update()) {
-          openReadings[openIndex] = Sensor_LoadCell_0.getData();
+        if (currentMillis - lastOpenReadTime >= 1000 && Sensor_LoadCell.update()) {
+          openReadings[openIndex] = Sensor_LoadCell.getData();
           Serial.println("Open reading " + String(openIndex + 1) + ": " + String(openReadings[openIndex]));
           openIndex++;
           lastOpenReadTime = currentMillis;
@@ -205,8 +209,8 @@ void loop() {
         }
 
         // Take one reading every 1000ms
-        if (currentMillis - lastClosedReadTime >= 1000 && Sensor_LoadCell_0.update()) {
-          closedReadings[closedIndex] = Sensor_LoadCell_0.getData();
+        if (currentMillis - lastClosedReadTime >= 1000 && Sensor_LoadCell.update()) {
+          closedReadings[closedIndex] = Sensor_LoadCell.getData();
           Serial.println("Closed reading " + String(closedIndex + 1) + ": " + String(closedReadings[closedIndex]));
           closedIndex++;
           lastClosedReadTime = currentMillis;
@@ -237,7 +241,7 @@ void loop() {
 
   ///// -------------------- OPERATIONAL PHASE -------------------- /////
 
-  if (!redLEDActive && Sensor_LoadCell_0.update()) {
+  if (!redLEDActive && Sensor_LoadCell.update() && Drainage_WeightScale.update() && Saline_WeightScale.update()) {
     newDataReady = true;
   }
 
@@ -258,11 +262,11 @@ void loop() {
 
   if (newDataReady && currentMillis > t + updateInterval && !flush_now) {
     float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
-    float occlusionSensorValue = Sensor_LoadCell_0.getData();
+    float occlusionSensorValue = Sensor_LoadCell.getData();
 
-    float drainageVolume = Drainage_LoadCell_1.getData();
+    float drainageVolume = Drainage_WeightScale.getData();
 
-    float salineVolume = flushcounter*15;
+    float salineVolume = Saline_WeightScale.getData();
 
       if (flushcounter == prevflushcounter + 1) {
         didaflushtrigger = 1;
@@ -483,13 +487,13 @@ void handle_pump_logic() {
     startSalinePropulsion();
 
     // Initialize clog clear timer (abscess_flush_timer)
-    absess_flush_timer_start = millis();
-    absess_flush_timer_limit = flush_duration * 1000; // Wait for stabilization
+    abscess_flush_timer_start = millis();
+    abscess_flush_timer_limit = flush_duration * 1000; // Wait for stabilization
 
     //Serial.print("CLOG FLUSHING FOR: ");
     //Serial.print(flush_duration);
     //Serial.println(" seconds");
-    while (millis() - absess_flush_timer_start < absess_flush_timer_limit) {
+    while (millis() - abscess_flush_timer_start < abscess_flush_timer_limit) {
       //Serial.println("Reversing pump and flush to clear clog");
     } 
       // Flush completed
