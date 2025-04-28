@@ -82,7 +82,16 @@ void setup() {
   ///// Serial COMMUNICATION INITIALIZATION /////
   delay(3000);
   Serial.begin(9600);
-  Serial.println("Starting...");
+
+
+  ///// Initialize buttons, press reset button to start program /////
+  pinMode(buttonResetPin, INPUT_PULLUP); // Configure button pin as input with internal pull-up resistor
+  pinMode(buttonFlushPin, INPUT_PULLUP); // Configure butto pin as input with internal pull-up resistor
+  Serial.println("push power button, then reset button to start");
+  while (digitalRead(buttonResetPin) == HIGH){
+    // wait for reset button to be pushed
+  }
+
 
   // Initialize pump control pins
   pinMode(in1, OUTPUT);
@@ -104,8 +113,8 @@ void setup() {
 
   ///// CALIBRATION VALUES /////
   float calibrationValue_Sensor_LoadCell = -286.04; // Calibration value for sensor load cell
-  float calibrationValue_Drainage_WeightScale = 230;
-  float calibrationValue_Saline_WeightScale = 230;
+  float calibrationValue_Drainage_WeightScale = 230; // Calibration value for drainage weight scale
+  float calibrationValue_Saline_WeightScale = 230; // Calibration value for saline weight scale
 
   ///// LOAD CELL INITIALIZATION /////
   Sensor_LoadCell.begin();
@@ -138,8 +147,6 @@ void setup() {
   pinMode(redPin, OUTPUT);
   pinMode(orangePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
-  pinMode(buttonResetPin, INPUT_PULLUP); // Configure button pin as input with internal pull-up resistor
-  pinMode(buttonFlushPin, INPUT_PULLUP); // Configure butto pin as input with internal pull-up resistor
   digitalWrite(redPin, HIGH);  
   digitalWrite(orangePin, HIGH);  
   digitalWrite(greenPin, LOW);  /// Start with green LED
@@ -169,6 +176,7 @@ void loop() {
   unsigned long currentMillis = millis();
 
   ///// -------------------- THRESHOLD CALCULATION PHASE -------------------- /////
+  startAbscessSuction();
   if (!thresholdCalculated) {
     switch (thresholdStep) {
       case 0: { // Collect open readings
@@ -260,7 +268,7 @@ void loop() {
     delay(200);
   }
 
-  if (newDataReady && currentMillis > t + updateInterval && !flush_now) {
+  if (newDataReady && currentMillis > (t + updateInterval) && !flush_now) {
     float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
     float occlusionSensorValue = Sensor_LoadCell.getData();
 
