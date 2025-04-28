@@ -26,15 +26,11 @@ unsigned long flush_timer_start = 0; //Flush performed when periodic flush is pe
 
 // Flags and states
 bool clog_yn = false, flush_now = false, red_led_stop = false;
-bool RPwrstate = 0; //Assign variables
-bool LPwrstate = 0;
 int lastButtonState = -99;
-int spdtstate = 0; // 1 = Normal, 0 = Off, -1 = prime
 int flush_cycle_proceedyn = 0;
 
 ///// PIN DEFINITIONS /////
 int in1 = 12, in2 = 11, in3 = 9, in4 = 10, pinSaline = 8, pinAbscess = 13;
-int pinPwrA = A2, pinPwrB = A3;
 int voltage_A_pin = A0;
 const int sensorSckPin = 3; // Load cell clock
 const int sensorDoutPin = 4; // Load cell data
@@ -101,8 +97,6 @@ void setup() {
   pinMode(pinSaline, OUTPUT);
   pinMode(pinAbscess, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(pinPwrA, INPUT_PULLUP); //SPDT
-  pinMode(pinPwrB, INPUT_PULLUP); //SPDT
 
   //Update pumps rpm
   update_pump_rpm();
@@ -399,68 +393,6 @@ void updateSerial(float totalTimeinSeconds, float occlusionSensorValue, float dr
   Serial.print(", ");
   Serial.println(flushTimes);
 
-}
-
-////////////////////////////////////////////////////////////
-///////////////// HANDLE TOGGLE SWITCH /////////////////////
-////////////////////////////////////////////////////////////
-
-int handle_toggle_switch(){
-
-    RPwrstate = digitalRead(pinPwrA);  //read the input pins
-    LPwrstate = digitalRead(pinPwrB);
-  
-    if ( (RPwrstate == LOW) && (LPwrstate == HIGH)) //test for right position
-    {
-      spdtstate = 1; // 1 = Normal, 0 = Off, -1 = prime
-      //Serial.println("Switch in Right position");
-    }
-    if ( (RPwrstate == HIGH) && (LPwrstate == HIGH)) //test for center position
-    {
-      spdtstate = 0; // 1 = Normal, 0 = Off, -1 = prime    
-      //Serial.println("Switch in Center position");
-    }
-    if ( (RPwrstate == HIGH) && (LPwrstate == LOW))  //test for left position
-    {
-      spdtstate = -1; // 1 = Normal, 0 = Off, -1 = prime    
-      //Serial.println("Switch in Left position");
-    } 
-  
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    
-    //Once device is powered on, get current position of the switch and create last button state (runs once)
-    if (lastButtonState == -99){  
-      lastButtonState = spdtstate;
-    }
-
-    //Check for a change in toggle switch state
-    if (spdtstate != lastButtonState && spdtstate == 1) { //Switched from off or prime to on  
-        //Serial.println("Switched from prime/off position to on position");
-        setup_timer();  
-      }
-    else if (spdtstate != lastButtonState && spdtstate == 0) { //Switched from on or prime to off
-        //Serial.println("Switched from on/prime position to off position");
-        spdtstate = 0;
-    }
-
-    //Update spdtstate
-    lastButtonState = spdtstate;
-
-    //Change pump settings depending on toggle switch state
-    if (spdtstate == 0){ //Off position
-      stopAbscess();
-      stopSaline();
-      return 0; //Flag to repeat main loop
-    }
-   else if (spdtstate == -1){ //Primes position
-      stopAbscess();
-      startSalinePropulsion();
-      return 0; //Flag to repeat main loop
-    }
-   else if (spdtstate == 1){ //On position
-      return 1; //Flag to proceed to remaining code
-   }
-  
 }
 
 ////////////////////////////////////////////////////////////
