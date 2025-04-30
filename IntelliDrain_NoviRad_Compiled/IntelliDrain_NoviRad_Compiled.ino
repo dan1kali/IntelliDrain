@@ -3,10 +3,6 @@
 #include <HX711_ADC.h> // Communicates with HX711 load cell amplifier module
 #include <SPI.h>
 
-// Your WiFi credentials. Set password to "" for open networks.
-char ssid[] = "Rice Visitor";
-char pass[] = "";
-
 ///// NOVIRAD DEVICE PARAMETERS /////
 int saline_rpm = 220; //Saline pump rpm: scaled 0 -255
 int abscess_rpm = 170;   //Saline pump rpm: scaled 0 -255
@@ -18,11 +14,18 @@ bool verbosex = true;
 float totalflushvol = 0.0, totalflushtime = 0.0;
 int flushcounter = 0, prevflushcounter = 0, didaflushtrigger = 0;
 
-
 // Timers
 unsigned long abscess_flush_timer_start = 0; //Flush performed when clog is detected
 unsigned long abscess_flush_timer_limit = 0;
 unsigned long flush_timer_start = 0; //Flush performed when periodic flush is performed
+
+///// TIME VARIABLES /////
+unsigned long t = 0; // To track time
+unsigned long startMillis; // To store the start time
+const int updateInterval = 954; // Data collection frequency in millis
+unsigned long initialStartupTime = 27; // delay interval in seconds
+unsigned long delayInterval = 5; // delay interval in milliseconds
+unsigned long prevOrangeMillis = 24; // delay interval in milliseconds
 
 // Flags and states
 bool clog_yn = false, flush_now = false, red_led_stop = false;
@@ -46,11 +49,6 @@ const byte buttonFlushPin = 6; // Pin for flush button
 HX711_ADC Sensor_LoadCell(sensorDoutPin, sensorSckPin); // Sensor Load Cell
 HX711_ADC Drainage_WeightScale(drainageDoutPin, drainageSckPin); // Sensor Load Cell
 HX711_ADC Saline_WeightScale(salineDoutPin, salineSckPin); // Sensor Load Cell
-
-///// TIME VARIABLES /////
-unsigned long t = 0; // To track time
-unsigned long startMillis; // To store the start time
-const int updateInterval = 954; // Data collection frequency in millis
 
 ///// LOGIC AND LED CONTROL VARIABLES /////
 unsigned long orangeLEDStartTime = 0;  // To track when orange LED is turned on
@@ -265,9 +263,7 @@ void loop() {
   if (newDataReady && currentMillis > (t + updateInterval) && !flush_now) {
     float totalTimeinSeconds = (currentMillis - startMillis) / 1000.0;
     float occlusionSensorValue = Sensor_LoadCell.getData();
-
     float drainageVolume = Drainage_WeightScale.getData();
-
     float salineVolume = Saline_WeightScale.getData();
 
       if (flushcounter == prevflushcounter + 1) {
@@ -278,18 +274,53 @@ void loop() {
     prevflushcounter = flushcounter;
     
     //updateSerial(totalTimeinSeconds, occlusionSensorValue);
-
+    
+    Serial.println();
     updateSerial(totalTimeinSeconds, occlusionSensorValue, drainageVolume, salineVolume, didaflushtrigger);
+
+    /* Serial.print("\n\nTotal time: ");
+    Serial.println(totalTimeinSeconds);
+    
+    Serial.print("Total to wait: ");
+    Serial.println((prevOrangeMillis + initialStartupTime + delayInterval));
+
+    Serial.print("prevOrangeMillis: ");
+    Serial.println((prevOrangeMillis));
+
+    Serial.print("initialStartupTime: ");
+    Serial.println((initialStartupTime));
+
+    Serial.print("delayInterval: ");
+    Serial.println((delayInterval)); */
+
+
+    /* Serial.println();
+    Serial.print("orangeLEDActive: ");
+    Serial.println(!orangeLEDActive); // Prints true if orangeLEDActive is false
+
+    Serial.print("time condition: ");
+    Serial.println(totalTimeinSeconds >= (prevOrangeMillis + initialStartupTime + delayInterval)); // Prints true if this condition is met
+
+    Serial.print("value condition: ");
+    Serial.println(occlusionSensorValue <= threshold); // Prints true if this condition is met */
+
+    if (t >= (initialStartupTime + delayInterval)) {
+        initialStartupTime = 0;  // Reset initialStartupTime
+    } else {
+        t = 0;  // Reset t if the condition is not met
+    }
 
     // LED logic
     if (redLEDActive) {
       digitalWrite(greenPin, HIGH);
       digitalWrite(orangePin, HIGH);
     } else {
-      if (!orangeLEDActive && totalTimeinSeconds >= 42 && occlusionSensorValue <= threshold) {
+      //if (!orangeLEDActive && totalTimeinSeconds >= (initialStartupTime + delayInterval) && occlusionSensorValue <= threshold) { //was 42
+      if (!orangeLEDActive && totalTimeinSeconds >= (prevOrangeMillis + initialStartupTime + delayInterval) && occlusionSensorValue <= threshold) { //was 42
         orangeLEDStartTime = millis();
         orangeLEDActive = true;
         digitalWrite(greenPin, HIGH);
+        prevOrangeMillis = millis()/1000;
       }
     }
 
