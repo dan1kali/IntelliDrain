@@ -22,10 +22,10 @@ unsigned long flush_timer_start = 0; //Flush performed when periodic flush is pe
 ///// TIME VARIABLES /////
 unsigned long t = 0; // To track time
 unsigned long startMillis; // To store the start time
-const int updateInterval = 954; // Data collection frequency in millis
+const int updateInterval = 1000; // Data collection frequency in millis
 unsigned long initialStartupTime = 27; // delay interval in seconds
 unsigned long delayInterval = 5; // delay interval in milliseconds
-unsigned long prevOrangeMillis = 24; // delay interval in milliseconds
+unsigned long prevOrangeMillis = 21; // delay interval in milliseconds
 
 // Flags and states
 bool clog_yn = false, flush_now = false, red_led_stop = false;
@@ -61,7 +61,7 @@ bool TwoCountDone = false;
 unsigned long twiceLEDEndTime = 0; // To track end time between orange activations
 unsigned long timeBetween = 0; // To calculate time between orange activations
 const long orangeLEDTotalDuration = 10000;  // Total orange LED duration (10 seconds)
-const long TimeBetweenDuration = 5000; // Max unallowable time for orange activations
+const long TimeBetweenDuration = 20000; // Max unallowable time for orange activations
 bool orangeLEDActive = false;  // Flag to check if orange LED is active
 bool redLEDActive = false;  // Flag to check if red LED is active
 
@@ -225,7 +225,8 @@ void loop() {
 
           float openAvg = openSum / 10.0;
           float closedAvg = closedSum / 10.0;
-          threshold = 0.5 * (openAvg + closedAvg);
+          //threshold = 0.5 * (openAvg + closedAvg);
+          threshold =  closedAvg;
 
           Serial.println("Open avg: " + String(openAvg));
           Serial.println("Closed avg: " + String(closedAvg));
@@ -256,6 +257,8 @@ void loop() {
     OneCountDone = false;
     TwoCount = false;
     TwoCountDone = false;
+    prevOrangeMillis = (millis()/1000) ; // takes about 2 seconds to finish the rest of the loop, add 3
+
     //Serial.println("Red LED turned off. Resume.");
     delay(200);
   }
@@ -278,6 +281,31 @@ void loop() {
     Serial.println();
     updateSerial(totalTimeinSeconds, occlusionSensorValue, drainageVolume, salineVolume, didaflushtrigger);
 
+    /* Serial.print("\n\nTotal time: ");
+    Serial.println(totalTimeinSeconds);
+    
+    Serial.print("Total to wait: ");
+    Serial.println((prevOrangeMillis + initialStartupTime + delayInterval));
+
+    Serial.print("prevOrangeMillis: ");
+    Serial.println((prevOrangeMillis));
+
+    Serial.print("initialStartupTime: ");
+    Serial.println((initialStartupTime));
+
+    Serial.print("delayInterval: ");
+    Serial.println((delayInterval));
+
+    Serial.println(); // Prints true if orangeLEDActive is false
+    Serial.print("orangeLEDActive: ");
+    Serial.println(!orangeLEDActive); // Prints true if orangeLEDActive is false
+
+    Serial.print("time condition: ");
+    Serial.println(totalTimeinSeconds >= (prevOrangeMillis + initialStartupTime + delayInterval)); // Prints true if this condition is met
+
+    Serial.print("value condition: ");
+    Serial.println(occlusionSensorValue >= threshold); */ // Prints true if this condition is met
+
     if (t >= (initialStartupTime + delayInterval)) {
         initialStartupTime = 0;  // Reset initialStartupTime
     } else {
@@ -290,11 +318,11 @@ void loop() {
       digitalWrite(orangePin, HIGH);
     } else {
       //if (!orangeLEDActive && totalTimeinSeconds >= (initialStartupTime + delayInterval) && occlusionSensorValue <= threshold) { //was 42
-      if (!orangeLEDActive && totalTimeinSeconds >= (prevOrangeMillis + initialStartupTime + delayInterval) && occlusionSensorValue <= threshold) { //was 42
+      if (!orangeLEDActive && totalTimeinSeconds >= (prevOrangeMillis + initialStartupTime + delayInterval) && occlusionSensorValue >= threshold) { //was 42
         orangeLEDStartTime = millis();
         orangeLEDActive = true;
         digitalWrite(greenPin, HIGH);
-        prevOrangeMillis = millis()/1000;
+        prevOrangeMillis = (millis()/1000) ; // takes about 2 seconds to finish the rest of the loop, add 3
       }
     }
 
@@ -366,7 +394,8 @@ void loop() {
     }
 
     // Green LED default (on when idle)
-    if (occlusionSensorValue > threshold && !redLEDActive && !orangeLEDActive) {
+    //if (occlusionSensorValue > threshold && !redLEDActive && !orangeLEDActive) {
+    if (!redLEDActive && !orangeLEDActive) {
       digitalWrite(greenPin, LOW);
     } else {
       digitalWrite(greenPin, HIGH);
