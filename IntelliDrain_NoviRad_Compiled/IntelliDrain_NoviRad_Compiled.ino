@@ -278,32 +278,6 @@ void loop() {
     Serial.println();
     updateSerial(totalTimeinSeconds, occlusionSensorValue, drainageVolume, salineVolume, didaflushtrigger);
 
-    /* Serial.print("\n\nTotal time: ");
-    Serial.println(totalTimeinSeconds);
-    
-    Serial.print("Total to wait: ");
-    Serial.println((prevOrangeMillis + initialStartupTime + delayInterval));
-
-    Serial.print("prevOrangeMillis: ");
-    Serial.println((prevOrangeMillis));
-
-    Serial.print("initialStartupTime: ");
-    Serial.println((initialStartupTime));
-
-    Serial.print("delayInterval: ");
-    Serial.println((delayInterval)); */
-
-
-    /* Serial.println();
-    Serial.print("orangeLEDActive: ");
-    Serial.println(!orangeLEDActive); // Prints true if orangeLEDActive is false
-
-    Serial.print("time condition: ");
-    Serial.println(totalTimeinSeconds >= (prevOrangeMillis + initialStartupTime + delayInterval)); // Prints true if this condition is met
-
-    Serial.print("value condition: ");
-    Serial.println(occlusionSensorValue <= threshold); // Prints true if this condition is met */
-
     if (t >= (initialStartupTime + delayInterval)) {
         initialStartupTime = 0;  // Reset initialStartupTime
     } else {
