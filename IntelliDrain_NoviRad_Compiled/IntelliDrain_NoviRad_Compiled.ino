@@ -24,7 +24,7 @@ unsigned long t = 0; // To track time
 unsigned long startMillis; // To store the start time
 const int updateInterval = 1000; // Data collection frequency in millis
 unsigned long initialStartupTime = 27; // delay interval in seconds
-unsigned long delayInterval = 5; // delay interval in milliseconds
+unsigned long delayInterval = 10; // delay interval in milliseconds
 unsigned long prevOrangeMillis = 21; // delay interval in milliseconds
 
 // Flags and states
@@ -61,7 +61,7 @@ bool TwoCountDone = false;
 unsigned long twiceLEDEndTime = 0; // To track end time between orange activations
 unsigned long timeBetween = 0; // To calculate time between orange activations
 const long orangeLEDTotalDuration = 10000;  // Total orange LED duration (10 seconds)
-const long TimeBetweenDuration = 20000; // Max unallowable time for orange activations
+const long TimeBetweenDuration = 30000; // Max unallowable time for orange activations
 bool orangeLEDActive = false;  // Flag to check if orange LED is active
 bool redLEDActive = false;  // Flag to check if red LED is active
 
@@ -278,7 +278,6 @@ void loop() {
     
     //updateSerial(totalTimeinSeconds, occlusionSensorValue);
     
-    Serial.println();
     updateSerial(totalTimeinSeconds, occlusionSensorValue, drainageVolume, salineVolume, didaflushtrigger);
 
     /* Serial.print("\n\nTotal time: ");
